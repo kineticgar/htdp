@@ -96,22 +96,18 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 228069221;
-			PBXWorkspaceStateSaveDate = 228069221;
+			PBXPerProjectTemplateStateSaveDate = 229462486;
+			PBXWorkspaceStateSaveDate = 229462486;
 		};
 		perUserProjectItems = {
+			C157B8D60DAD543800077E10 /* PBXTextBookmark */ = C157B8D60DAD543800077E10 /* PBXTextBookmark */;
 			C15FBF9A0D57B0E80025A2DC /* PBXTextBookmark */ = C15FBF9A0D57B0E80025A2DC /* PBXTextBookmark */;
 			C15FBF9F0D57B0E80025A2DC /* PBXTextBookmark */ = C15FBF9F0D57B0E80025A2DC /* PBXTextBookmark */;
 			C15FBFA00D57B0E80025A2DC /* PBXTextBookmark */ = C15FBFA00D57B0E80025A2DC /* PBXTextBookmark */;
 			C15FC00B0D57DB0B0025A2DC /* PBXTextBookmark */ = C15FC00B0D57DB0B0025A2DC /* PBXTextBookmark */;
 			C15FC00D0D57DB0B0025A2DC /* PBXTextBookmark */ = C15FC00D0D57DB0B0025A2DC /* PBXTextBookmark */;
-			C18575540D98125000739FC3 /* PBXTextBookmark */ = C18575540D98125000739FC3 /* PBXTextBookmark */;
-			C18575560D98125000739FC3 /* PBXTextBookmark */ = C18575560D98125000739FC3 /* PBXTextBookmark */;
 			C185755F0D98164A00739FC3 /* PBXTextBookmark */ = C185755F0D98164A00739FC3 /* PBXTextBookmark */;
 			C18575600D98164A00739FC3 /* PBXTextBookmark */ = C18575600D98164A00739FC3 /* PBXTextBookmark */;
-			C18575610D98164A00739FC3 /* PBXTextBookmark */ = C18575610D98164A00739FC3 /* PBXTextBookmark */;
-			C18575620D98164A00739FC3 /* PBXTextBookmark */ = C18575620D98164A00739FC3 /* PBXTextBookmark */;
-			C18575630D98164A00739FC3 /* PBXTextBookmark */ = C18575630D98164A00739FC3 /* PBXTextBookmark */;
 			C18575640D98164A00739FC3 /* PBXTextBookmark */ = C18575640D98164A00739FC3 /* PBXTextBookmark */;
 			C1F661FD0D5BA02600FA3525 /* PBXTextBookmark */ = C1F661FD0D5BA02600FA3525 /* PBXTextBookmark */;
 			C1F661FE0D5BA02600FA3525 /* PBXTextBookmark */ = C1F661FE0D5BA02600FA3525 /* PBXTextBookmark */;
@@ -124,7 +120,7 @@
 		uiCtxt = {
 			sepNavIntBoundsRect = "{{0, 0}, {818, 1484}}";
 			sepNavSelRange = "{3578, 0}";
-			sepNavVisRect = "{{0, 0}, {450, 297}}";
+			sepNavVisRect = "{{0, 2}, {450, 297}}";
 		};
 	};
 	4D7DBE560C04A8FF00D8835D /* FaceTracker */ = {
@@ -147,6 +143,16 @@
 			sepNavSelRange = "{0, 0}";
 			sepNavVisRect = "{{0, 329437}, {798, 277}}";
 		};
+	};
+	C157B8D60DAD543800077E10 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 08FB7796FE84155DC02AAC07 /* FaceTracker.cpp */;
+		name = "FaceTracker.cpp: 99";
+		rLen = 0;
+		rLoc = 3578;
+		rType = 0;
+		vrLen = 577;
+		vrLoc = 0;
 	};
 	C15FBF710D57ADA00025A2DC /* FaceTracker */ = {
 		isa = PBXExecutable;
@@ -236,26 +242,6 @@
 		vrLen = 1999;
 		vrLoc = 1355;
 	};
-	C18575540D98125000739FC3 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 08FB7796FE84155DC02AAC07 /* FaceTracker.cpp */;
-		name = "FaceTracker.cpp: 99";
-		rLen = 0;
-		rLoc = 3578;
-		rType = 0;
-		vrLen = 1642;
-		vrLoc = 0;
-	};
-	C18575560D98125000739FC3 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 08FB7796FE84155DC02AAC07 /* FaceTracker.cpp */;
-		name = "FaceTracker.cpp: 99";
-		rLen = 0;
-		rLoc = 3578;
-		rType = 0;
-		vrLen = 1642;
-		vrLoc = 0;
-	};
 	C185755F0D98164A00739FC3 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = C1F661F10D5B9D6600FA3525 /* DataClient.py */;
@@ -267,36 +253,6 @@
 		vrLoc = 0;
 	};
 	C18575600D98164A00739FC3 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = C1F661EC0D5B9D0D00FA3525 /* FaceTracker.sh */;
-		name = "FaceTracker.sh: 8";
-		rLen = 0;
-		rLoc = 146;
-		rType = 0;
-		vrLen = 209;
-		vrLoc = 0;
-	};
-	C18575610D98164A00739FC3 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = C1F661EC0D5B9D0D00FA3525 /* FaceTracker.sh */;
-		name = "FaceTracker.sh: 8";
-		rLen = 0;
-		rLoc = 146;
-		rType = 0;
-		vrLen = 209;
-		vrLoc = 0;
-	};
-	C18575620D98164A00739FC3 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = C1F661F10D5B9D6600FA3525 /* DataClient.py */;
-		name = "DataClient.py: 19";
-		rLen = 0;
-		rLoc = 374;
-		rType = 0;
-		vrLen = 396;
-		vrLoc = 0;
-	};
-	C18575630D98164A00739FC3 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = C1F661EC0D5B9D0D00FA3525 /* FaceTracker.sh */;
 		name = "FaceTracker.sh: 8";
