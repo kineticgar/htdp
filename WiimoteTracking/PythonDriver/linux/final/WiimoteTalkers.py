@@ -1,15 +1,18 @@
+from wmd.EVDispatcher import EVDispatcher
+from wmd.WMManager import WMManager
+from IRparser import IRparser
+
+
 class Double_Talker:
 	
 	def __init__(self,address1, address2):
 
 		## Create a manager for them. Handles the Backend for the wiimotes.
-		from wmd.EVDispatcher import EVDispatcher
+		
 		evDis = EVDispatcher()
-		from wmd.Wiimote.WMManager import WMManager
+		
 		self.wm1 = WMManager( address1, evDis ) # Handles the Wiimote; connects to it, manages wiimote state and mode, parses wiimote reports
 		self.wm2 = WMManager( address2, evDis ) # second wiimote
-		
-		from mine.IRparser import IRparser
 		self.parser = IRparser()
 		self.listeners = []
 		
@@ -39,17 +42,15 @@ class Single_Talker:
 	def __init__(self,address):
 
 		## Create a manager for them. Handles the Backend for the wiimotes.
-		from wmd.EVDispatcher import EVDispatcher
 		evDis = EVDispatcher()
-		from wmd.Wiimote.WMManager import WMManager
 		self.wm1 = WMManager( address, evDis ) # Handles the Wiimote; connects to it, manages wiimote state and mode, parses wiimote reports
 
-		from mine.IRparser import IRparser
+		
 		self.parser = IRparser()
 		self.listeners = []
 		
 	def connect(self):
-		print "Searching for wiimote"
+		print "Searching for wiimotes"
 		return self.wm1.connect() and self.wm1.setup() 
 				
 	
@@ -69,6 +70,6 @@ class Single_Talker:
 		self.listeners += [listener]
 		
 class Printer:
-	def refresh(self,pos,axis):
-			print '\b'*50,pos,
+	def refresh(self,(x,y,z),(dx,dy,dz)):
+			print "%i,%i,%i,%i,%i" % (1,x,y,x+dx,y+dy)
 				

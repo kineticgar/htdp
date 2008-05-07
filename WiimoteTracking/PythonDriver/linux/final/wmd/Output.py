@@ -33,8 +33,6 @@ class WiimoteMode:
   def __init__( self, ev, backend ):
     self.backend = backend
     self.ir = Mode_IR( self )
-    self.leds = LEDs( self, ev )
-    self.vibe = Vibrator( self, ev )
 
   def send( self, cmd, report, data ):
     c = chr(cmd) + chr(report)
@@ -70,93 +68,6 @@ class WiimoteMode:
     req = [ 0, 0, addr_high, addr_low, 0, read_len ]
     self.send( 0x52, 0x17, req )
 
-
-class LEDs:
-  prevstate = [0,0,0,0]
-  state = [0,0,0,0]
-
-  def __init__( self, wiimoteMode, ev ):
-    self.ev = ev
-    self.wiimoteMode = wiimoteMode
-
-    self.ev.subscribe( SET_LED, self.ev_set_led )
-
-  def ev_set_led( self, payload ):
-    led = payload[0]
-    action = payload[1]
-
-    if action == 'toggle':
-      self.toggle(led)
-    elif action == 'on':
-      self.on(led)
-    elif action == 'off':
-      self.off(led)
-
-  def send_led_command( self ):
-    command_start = 0x521100
-    command_end = 0x00
-
-    if self.wiimoteMode.vibe.state == "on":
-      command_end += 1
-
-    for i in range(3):
-      if self.state[i]:
-        command_end += (i+1) * 0x10
-
-    command = hex(command_start + command_end)
-    cmd = command[2:].decode("hex")
-
-    self.wiimoteMode.send_command( cmd )
-
-  def on( self, led ):
-    if self.state[led] != 1:
-      self.state[led] = 1
-      self.refresh()
-
-  def off( self, led ):
-    if self.state[led] != 0:
-      self.state[led] = 0
-      self.refresh()
-
-  def toggle( self, led ):
-    if self.state[led] == 0:
-      self.on( led )
-    elif self.state[led] == 1:
-      self.off( led )
-
-  def refresh( self ):
-    self.send_led_command()
-
-
-class Vibrator:
-  """OH YEAH"""
-
-  state = "off" 
-
-  def __init__( self, wiimoteMode, ev ):
-    self.wiimoteMode = wiimoteMode
-    self.ev = ev
-
-  def on( self ):
-    if self.state != "on":
-      self.cmd_on()
-      self.state = "on"
-
-  def off( self ):
-      self.cmd_off()
-      self.state = "off"
-
-  def toggle( self ):
-    if self.state == "on":
-      self.off()
-    else:
-      self.on()
-
-  def cmd_on( self ):
-    self.wiimoteMode.send_command(hex2s(commandcodes['vibrate_on']))
-
-  def cmd_off( self ):
-    self.wiimoteMode.send_command(hex2s(commandcodes['vibrate_off']))
 
 
 # These are commands for the wiimote

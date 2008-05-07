@@ -3,7 +3,7 @@ from wmd.Common import *
 
 class EVDispatcher:
 
-  subs = {}
+  subs = {} 
 
   
   def send( self, evtype, payload ):

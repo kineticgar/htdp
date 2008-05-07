@@ -1,6 +1,6 @@
-from wmd.Wiimote.Backends.PyBlueZ import WiimoteBT_PyBlueZ
-from wmd.Wiimote.Input import  WiimoteState #,ReportParser
-from wmd.Wiimote.Output import WiimoteMode
+from wmd.PyBlueZ import WiimoteBT_PyBlueZ
+
+from wmd.Output import WiimoteMode
 from wmd.Common import *
 import time
 import psyco
@@ -13,7 +13,7 @@ class WMManager:
   def __init__( self, address, ev ):
     self.address = address
     self.ev = ev
-    self.wmstate = WiimoteState( self.ev )
+
     self.ev.subscribe( EV_SHUTDOWN, self.ev_shutdown )
 
   def connect( self ):
@@ -21,8 +21,6 @@ class WMManager:
     self.ev.send( *UI_INFO_CONNECTING )
     if self.address and self.backend.connect( self.address ):
       self.mode = WiimoteMode( self.ev, self.backend )
-      self.mode.leds.toggle( 0 )
-
       self.ev.send( *UI_INFO_CONNECTED )
       print "Connected to %s" % self.address
       return 1
