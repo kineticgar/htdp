@@ -30,7 +30,7 @@ MODE_ACC_IR = 0x33
 MODE_FULL = 0x3e
 
 class WiimoteMode:
-  def __init__( self, ev, backend ):
+  def __init__( self, backend ):
     self.backend = backend
     self.ir = Mode_IR( self )
 

@@ -34,6 +34,4 @@ except KeyboardInterrupt:
 	talker.disconnect()
 	raise
 	
-import sys
-sys.exit()
-	
+
