@@ -12,7 +12,7 @@ class WMManager:
   def __init__( self, address):
     self.address = address
 
-    self.subscribe( EV_SHUTDOWN, self.ev_shutdown )
+    self.subscribe( "EV_SHUTDOWN", self.ev_shutdown )
 
   def connect( self ):
     self.backend = WiimoteBT_PyBlueZ( self.address )

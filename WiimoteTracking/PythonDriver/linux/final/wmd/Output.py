@@ -82,6 +82,7 @@ commandcodes = {
 }
 
 class Mode_IR:
+
   def __init__( self, wiimoteMode, sequence="Ian", state="off" ):
     self.sequences = {
       'Ian': self.seq_ian,
