@@ -1,7 +1,7 @@
-"Non-wmd file"
 from bluetooth import *
 class BluetoothDevice:
-	
+	"""Contains non wii specific code. Only here to make 
+	Wiimote.py look cleaner"""
 	
 	
 	def __init__(self,address):	
@@ -13,5 +13,13 @@ class BluetoothDevice:
 		self.sendSocket = BluetoothSocket( L2CAP )
 		
 	def send(self,data):
-		## Data should be a string of hex chars:	
 		self.sendSocket.send(data)
+		
+	def getData(self):
+  		return self.receiveSocket.recv(1024)
+
+		
+	def disconnect(self):
+		self.receiveSocket.close()
+		self.sendSocket.close()
+	

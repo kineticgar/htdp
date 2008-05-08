@@ -21,17 +21,15 @@ address2 = '00:19:FD:D7:63:B1'
 dt = Double_Talker(address1, address2 )
 st = Single_Talker(address2 )
 talker = st
-assert talker.connect()
-talker.register( Scene()  )
+talker.connect()
+#talker.register( Scene()  )
 talker.register( Printer() )
-#talker.register( Dots() )
+talker.register( Dots() )
 
 try:
-	while 1: 
-		talker.refresh()
-		#time .sleep(0.01)
+	while 1: talker.refresh()
 except KeyboardInterrupt:
 	talker.disconnect()
-	raise
+	print "Disconned"
 	
 
