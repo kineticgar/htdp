@@ -15,17 +15,14 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import sys
+import sys,time
 sys.path.append('.')
-sys.path.append('./final')
 
-from Animations.Head3D import Scene
-from Animations.PyGameBar import Dots
 from final.WiimoteTalkers import *
 
 address = '00:19:FD:ED:E1:25'  ## address of my wiimote
 address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
-talker  = Talker(address,address2 ) ## Single_Talker talks to  a single wiimote
+talker  = Talker(address,address2) ## Single_Talker talks to  a single wiimote
 ## A talker has the following methods:
 ## connect() -- connects to any  wiimotes it knows the address for
 ## disconnect() -- quite similar to connect. 
@@ -37,23 +34,20 @@ talker  = Talker(address,address2 ) ## Single_Talker talks to  a single wiimote
 ## talker.refresh() refresh( pos, axis) is called for each of the registered listeners,
 ## where pos and axis are the processed data from the wiimotes. 
 
-
-
 talker.connect() ##Connect to the wiimote
 
 ## These are various ways of dealing with the data.
 ## Scene is a 3D head tracking  scene using python visual
 ## Printer just prints the position data out to the standard out
 ## Dots uses pygame to display what the wiimote sees.
+from Animations.Head3D import Scene
+from Animations.PyGameBar import Dots
 talker.register( Scene()  )
 talker.register( Printer() )
-talker.register( Dots() )
+#talker.register( Dots() )
 
-try:
-	while 1: talker.refresh()
+while 1: talker.refresh()#;time.sleep(0.03)
 
-except KeyboardInterrupt:
-	talker.disconnect()
-	print "Disconned"
+
 	
 

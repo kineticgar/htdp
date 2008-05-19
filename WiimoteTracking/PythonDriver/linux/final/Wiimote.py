@@ -19,6 +19,7 @@
 
 import time	
 from BluetoothDevice import BluetoothDevice
+from bluetooth import set_packet_timeout
 FEATURE_ENABLE = 0x04
 IR_MODE_EXP = 3
 CMD_SET_REPORT = 0x52
@@ -56,6 +57,7 @@ class Wiimote(BluetoothDevice):
 		## Port 17 is the one we want to send our data on.
 		self.receiveSocket.connect( ( self.address, 19 ) )
    		self.sendSocket.connect( ( self.address, 17 ) )
+
   
 		## So now we're connected!
 		## Time to set up the IR
@@ -66,6 +68,10 @@ class Wiimote(BluetoothDevice):
 		self.sendSeq(self.dataset_ian)
 		self.sendSeq(self.dataset_marcan)
 		self.sendSeq(self.dataset_ian)
+		#set_packet_timeout( self.address, 10)
+
+		## For more infomation on the wiimote IR api see:
+		##  http://wiibrew.org/index.php?title=Wiimote#Initialization 
 		return 1
 		
 	def join( self, cmd, report, data ):

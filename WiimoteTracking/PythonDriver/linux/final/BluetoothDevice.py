@@ -34,9 +34,14 @@ class BluetoothDevice:
 		self.sendSocket.send(data)
 		
 	def getData(self):
-  		return self.receiveSocket.recv(1024)
+		## This next line allows us to catch up with the wiimote if it's
+		## sending faster than we're reveiving. This needs sorting out. 
+		for i in range(4):  self.receiveSocket.recv(19)
 
+		return self.receiveSocket.recv(19)
+  		
 		
+		return result[0]
 	def disconnect(self):
 		self.receiveSocket.close()
 		self.sendSocket.close()
