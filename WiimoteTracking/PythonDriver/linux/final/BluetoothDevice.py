@@ -16,7 +16,7 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-from bluetooth import *
+from bluetooth import BluetoothSocket,L2CAP
 class BluetoothDevice:
 	"""Contains non wii specific code. Only here to make 
 	Wiimote.py look cleaner"""

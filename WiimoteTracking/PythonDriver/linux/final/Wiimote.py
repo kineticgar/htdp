@@ -78,13 +78,13 @@ class Wiimote(BluetoothDevice):
 	def convert( self,  offset, datum):
 		## This converts the hex values to a format the wiimote will
 		## be happy with. 
-	    of1 = offset >> 24 & 0xFF #extract offset bytes
-	    of2 = offset >> 16 & 0xFF
-	    of3 = offset >> 8 & 0xFF
-	    of4 = offset & 0xFF
-	    data = [datum] + [0]*15 # append zeros to pad data to 16 bytes
-	    ## format is [OFFSET (BIGENDIAN),SIZE,DATA (16bytes)]
-	    return self.join(CMD_SET_REPORT,RID_WMEM,[of1,of2,of3,of4,1]+data)
+		of1 = offset >> 24 & 0xFF #extract offset bytes
+		of2 = offset >> 16 & 0xFF
+		of3 = offset >> 8 & 0xFF
+		of4 = offset & 0xFF
+		data = [datum] + [0]*15 # append zeros to pad data to 16 bytes
+		## format is [OFFSET (BIGENDIAN),SIZE,DATA (16bytes)]
+		return self.join(CMD_SET_REPORT,RID_WMEM,[of1,of2,of3,of4,1]+data)
 
 
 

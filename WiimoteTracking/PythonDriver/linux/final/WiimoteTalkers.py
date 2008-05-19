@@ -1,6 +1,6 @@
 #from wmd.WMManager import WMManager
 from Wiimote import Wiimote
-from IRparser import IRparser
+from IRparser import IRParserFactory
 
 
 class Talker:
@@ -11,13 +11,14 @@ class Talker:
 		## parser doesn't know what to do with them. Niether do I actually...
 		
 		self.adrs=addresses
-		self.wiimotes= [Wimote(adr) for adr in self.adrs]
-		self.parser = IRparser()
+		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
+		self.parser = IRParserFactory(len(self.wiimotes))
 		self.listeners = []
 		
 	def connect(self):
 		## Tries to connect to each address and returns true if everything went ok.
 		## TODO: if self.adrs is empty, do a sweep and find all willing remotes in range.
+		print "Searching for wiimotes..."
 		return 	reduce(lambda x, y: x and y, [ wm.connect() for wm in self.wiimotes],True)
 		
 	
@@ -31,10 +32,10 @@ class Talker:
 		## sends them to whoever is listening via the refresh method.
 		data  = [wm.getData() for wm in self.wiimotes]
 		
-		pos,axis = self.parser.parse(data)
-		if pos and axis: ## IR parser may return None...
+		pos1,pos2 = self.parser.parse(data)
+		if pos1 and pos2: ## IR parser may return None...
 			for l in self.listeners:
-				l.refresh(pos,axis)
+				l.refresh(pos1,pos2)
 			
 			
 	def register(self, listener):
@@ -46,6 +47,8 @@ class Talker:
 		
 class Printer:
 	## This is an example of a listener. Its refresh method simply prints the data
-	def refresh(self,(x,y,z),(dx,dy,dz)):
-			print "%i,%i,%i,%i,%i" % (1,x,y,x+dx,y+dy)
-				
+	def refresh(self,(x1,y1,z1),(x2,y2,z2)):
+			print "%i,%i,%i,%i,%i" % (1,x1,y1,x2,y2)
+
+	
+	
