@@ -3,71 +3,49 @@ from Wiimote import Wiimote
 from IRparser import IRparser
 
 
-class Double_Talker:
+class Talker:
 	
-	def __init__(self,address1, address2):
-		## Create a manager for them. Handles the Backend for the wiimotes.
-
+	def __init__(self,*addresses):
+		## Accepts an arbitrary number of wiimote addresses as an argument
+		## Currently, any remotes past the first two are ignored, as the IR
+		## parser doesn't know what to do with them. Niether do I actually...
 		
-		self.wm1 = Wiimote( address1 ) # Handles the Wiimote; connects to it, manages wiimote state and mode, parses wiimote reports
-		self.wm2 = Wiimote( address2 ) # second wiimote
+		self.adrs=addresses
+		self.wiimotes= [Wimote(adr) for adr in self.adrs]
 		self.parser = IRparser()
 		self.listeners = []
 		
 	def connect(self):
-		return 	( self.wm1.connect() and self.wm2.connect())
+		## Tries to connect to each address and returns true if everything went ok.
+		## TODO: if self.adrs is empty, do a sweep and find all willing remotes in range.
+		return 	reduce(lambda x, y: x and y, [ wm.connect() for wm in self.wiimotes],True)
+		
 	
 	def disconnect(self): 
-		self.wm1.disconnect()
-		self.wm2.disconnect()
+		# Disconnects from all wiimotes.
+		for wm in self. wiimotes: wm.disconnect()
+
 		
 	def refresh(self):
-		data1 	 = self.wm1.getData() 
-		data2	 = self.wm2.getData()
-		pos,axis = self.parser.parse_double(data1,data2)
-		if pos and axis:
+		## refresh retrieves the data from each wiimote, parses them and 
+		## sends them to whoever is listening via the refresh method.
+		data  = [wm.getData() for wm in self.wiimotes]
+		
+		pos,axis = self.parser.parse(data)
+		if pos and axis: ## IR parser may return None...
 			for l in self.listeners:
 				l.refresh(pos,axis)
 			
 			
 	def register(self, listener):
-		self.listeners += [listener]
-		
-class Single_Talker:
-	
-	def __init__(self,address):
-
-		## Create a manager for them. Handles the Backend for the wiimotes.
-		self.wm1 = Wiimote( address ) # Handles the Wiimote; connects to it, manages wiimote state and mode, parses wiimote reports
-
-		
-		self.parser = IRparser()
-		self.listeners = []
-		
-	def connect(self):
-		print "Searching for wiimotes"
-		return self.wm1.connect() 
-				
-	
-	def disconnect(self): 
-		self.wm1.disconnect()
-
-		
-	def refresh(self):
-		data 	 = self.wm1.getData() 
-		pos,axis = self.parser.parse_single(data)
-		if pos and axis:
-			for l in self.listeners:
-				l.refresh(pos,axis)
-			
-			
-	def register(self, listener):
+		## Adds a listener to the talker
 		self.listeners += [listener]
 		
 		
 		
 		
 class Printer:
+	## This is an example of a listener. Its refresh method simply prints the data
 	def refresh(self,(x,y,z),(dx,dy,dz)):
 			print "%i,%i,%i,%i,%i" % (1,x,y,x+dx,y+dy)
 				
