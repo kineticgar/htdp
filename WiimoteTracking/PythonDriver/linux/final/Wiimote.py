@@ -16,7 +16,7 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-
+import threading
 import time	
 from BluetoothDevice import BluetoothDevice
 from bluetooth import set_packet_timeout
@@ -31,18 +31,17 @@ MODE_ACC_IR = 0x33
 SET_MODE_IR = chr(CMD_SET_REPORT) + chr(RID_MODE) + '0' + chr(MODE_ACC_IR)
 
 
-class Wiimote(BluetoothDevice):
+class Wiimote(BluetoothDevice,threading.Thread):
 	
 	dataset_ian = [
-				[ 0x04B00030, 0x01 ],
-				[ 0x04B00030, 0x08 ],
-				[ 0x04B00006, 0x90 ],## These
-				[ 0x04B00008, 0x41 ],## Set
-				[ 0x04B0001A, 0x40 ],## Sensitivity
-				[ 0x04B00033, 0x33 ],
-				[ 0x04B00030, 0x08 ]
-				
-		    	]		
+			[ 0x04B00030, 0x01 ],
+			[ 0x04B00030, 0x08 ],
+			[ 0x04B00006, 0x90 ],## These
+			[ 0x04B00008, 0x41 ],## Set
+			[ 0x04B0001A, 0x40 ],## Sensitivity
+			[ 0x04B00033, 0x33 ],
+			[ 0x04B00030, 0x08 ]
+		    ]		
 	dataset_marcan = [
 			[ 0x04B00030,8],
 			[ 0x04B00006,0x90],
@@ -51,6 +50,12 @@ class Wiimote(BluetoothDevice):
 			[ 0x04B00033, 3]
 			]	
 			
+	def run(self):
+		## Continually receive data from the wiimote to avoid backlog. 
+		while 1:
+			self.data =  self.receiveSocket.recv(19)
+
+				
 	def connect(self):
 		"Connects to the wiimote at address and enable IR"
 		## Port 19 is where the data will be found
@@ -72,6 +77,10 @@ class Wiimote(BluetoothDevice):
 
 		## For more infomation on the wiimote IR api see:
 		##  http://wiibrew.org/index.php?title=Wiimote#Initialization 
+		
+		## Set up and start the data-receiving thread:
+		threading.Thread.__init__ (self)
+		self.start() 
 		return 1
 		
 	def join( self, cmd, report, data ):

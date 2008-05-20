@@ -17,10 +17,15 @@
 
 
 from bluetooth import BluetoothSocket,L2CAP
-class BluetoothDevice:
+
+class BluetoothDevice():
 	"""Contains non wii specific code. Only here to make 
 	Wiimote.py look cleaner"""
 	
+	
+	
+	
+
 	
 	def __init__(self,address):	
 		self.address = address
@@ -29,19 +34,15 @@ class BluetoothDevice:
 		##		One to sent config data
 		self.receiveSocket = BluetoothSocket( L2CAP )
 		self.sendSocket = BluetoothSocket( L2CAP )
+		self.data = None
+		
 		
 	def send(self,data):
 		self.sendSocket.send(data)
 		
 	def getData(self):
-		## This next line allows us to catch up with the wiimote if it's
-		## sending faster than we're reveiving. This needs sorting out. 
-		for i in range(4):  self.receiveSocket.recv(19)
-
-		return self.receiveSocket.recv(19)
-  		
+		return self.data
 		
-		return result[0]
 	def disconnect(self):
 		self.receiveSocket.close()
 		self.sendSocket.close()
