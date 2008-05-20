@@ -42,11 +42,11 @@ talker.connect() ##Connect to the wiimote
 ## Dots uses pygame to display what the wiimote sees.
 from Animations.Head3D import Scene
 from Animations.PyGameBar import Dots
-talker.register( Scene()  )
+#talker.register( Scene()  )
 talker.register( Printer() )
 #talker.register( Dots() )
 
-while 1: talker.refresh()#;time.sleep(0.03)
+while 1: talker.refresh();time.sleep(0.01)
 
 
 	
