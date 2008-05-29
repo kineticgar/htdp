@@ -47,8 +47,11 @@ class Talker:
 		
 class Printer:
 	## This is an example of a listener. Its refresh method simply prints the data
+	def __init__(self):
+		self.oldData = None
 	def refresh(self,(x1,y1,z1),(x2,y2,z2)):
-			print "x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2)
-
+			if (x1,y1,z1,x2,y2,z2) != self.oldData:
+				print "x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2)
+				self.oldData = (x1,y1,z1,x2,y2,z2)
 	
 	

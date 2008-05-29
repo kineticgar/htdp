@@ -22,7 +22,7 @@ from final.WiimoteTalkers import *
 
 address = '00:19:FD:ED:E1:25'  ## address of my wiimote
 address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
-talker  = Talker(address,address2) ## Single_Talker talks to  a single wiimote
+talker  = Talker(address2) ## Single_Talker talks to  a single wiimote
 ## A talker has the following methods:
 ## connect() -- connects to any  wiimotes it knows the address for
 ## disconnect() -- quite similar to connect. 

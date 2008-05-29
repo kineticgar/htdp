@@ -98,6 +98,7 @@ class Wiimote(threading.Thread):
 		## Set up and start the data-receiving thread
 		threading.Thread.__init__ (self)
 		self.start() 
+		print "Connected to %s" % self.address
 		return 1
 
 	def sendSeq( self , dataset):
