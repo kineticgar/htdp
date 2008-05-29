@@ -9,12 +9,9 @@ class ButtonParser:
 	def parse(self,data):
 	
 		##on every channel, bytes 2 & 3 are button bytes. 
-		first = ord(data[0][0])
-		second = ord(data[0][3])
-		
 		##we're actually going to look at just the A button
 		
-		A = second & 0x08
+		A = ord(data[0][3]) & 0x08
 		if A and not self.A: print "Button A pressed."
 		if not A and self.A: print "Button A released."
 		self.A = A	
