@@ -32,13 +32,15 @@ class AbstractIRParser:
 	
 	def __init__(self):
 		## nothing interesting here: just setting stuff to zero.
-		self.cycles=0 ## Keeps track of how many times data as been parsed
 		self.x1  = 0
 		self.x2  = 0
+		self.dx  = 0
 		self.y1  = 0
 		self.y2  = 0
+		self.dy  = 0
 		self.z1  = 0
 		self.z2  = 0
+		self.dz  = 0
 
 	def __getXY(self, data):
 		data = list(data)
@@ -74,7 +76,7 @@ class AbstractIRParser:
 		##data[10:13] contains the second. 
 		xys1 = [self.__getXY(d[7:10]) for d in data]
 		xys2 = [self.__getXY(d[10:13]) for d in data]
-		(self.x1,self.y1,self.z1),(self.x2,self.y2,self.z2)= self.process(xys1,xys2)
+		self.process(xys1,xys2)
 		return (self.x1,self.y1,self.z1),(self.x2,self.y2,self.z2)
 		
 		
@@ -91,19 +93,35 @@ class SingleIRParser(AbstractIRParser):
 		## y data from this remote can be returned directly for both ir points, and 
 		## if we assume that a line between the two points stays perpendicular to the 
 		## wiimote, we can use the length of this line as a metric for z
-		## This metric is pretty arbitrary right now. 
+		## This metric is pretty arbitrary right now. s
 		
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
-		## When this is the case, we just use the last usefull recorded position, stored in x1,y1 etc
-		if x1 == 1023: x1 = self.x1  
-		if y1 == 1023: y1 = self.y1 
-		if x2 == 1023: x2 = self.x2 
-		if y2 == 1023: y2 = self.y2 
+		## If one dot goes off-screen, then we use the visible dot and the last known difference 
+		## between them. 
+		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
+		if x1 == 1023 and x2 == 1023: pass
+		elif x2 == 1023:
+			self.x1 = x1
+			self.y1 = y1
+			self.x2 = x1 + self.dx
+			self.y2 = y1 + self.dy
+		elif x1 == 1023:
+			self.x1 = x2 - self.dx
+			self.y1 = y2 - self.dy
+			self.x2 = x2
+			self.y2 = y2
+		else:
+			self.x1 = x1
+			self.y1 = y1
+			self.x2 = x2
+			self.y2 = y2
+			self.dx = x2 - x1
+			self.dy = y2 - y1
 		
-		z1 = 500- math.sqrt((x1-x2)**2 + ((y1-y2))**2 )
-		z2 = z1
-		return (x1,y1,z1),(x2,y2,z2)
+		self.z1 = 500- math.sqrt(self.dx**2 + self.dy**2 )
+		self.z2 = self.z1
+
 
 
 class DoubleIRParser(AbstractIRParser):	
@@ -116,25 +134,46 @@ class DoubleIRParser(AbstractIRParser):
 		## It assumes remotes are at 90 degrees, equal height and that 
 		## the wii remotes field of view is linear not radial. 
 
-		## x,y data comes form wm1, z from wm2
+		## For the moment, x & y data comes form wm1 so the code is a direct copy from above.
+		## z data comes from the second wiimote.z\
 		## both sets of data should have more or less the same vertical height,
 		## assuming equal distance from the wiimotes
 		
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
-		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
-		## When this is the case, we just use the last usefull recorded position, stored in x1,y1 etc
-		if x1 == 1023: x1 = self.x1  
-		if y1 == 1023: y1 = self.y1 
-		if x2 == 1023: x2 = self.x2 
-		if y2 == 1023: y2 = self.y2 
-
+		
+		if x1 == 1023 and x2 == 1023: pass
+		elif x2 == 1023:
+			self.x1 = x1
+			self.y1 = y1
+			self.x2 = x1 + self.dx
+			self.y2 = y1 + self.dy
+		elif x1 == 1023:
+			self.x1 = x2 - self.dx
+			self.y1 = y2 - self.dy
+			self.x2 = x2
+			self.y2 = y2
+		else:
+			self.x1 = x1
+			self.y1 = y1
+			self.x2 = x2
+			self.y2 = y2
+			self.dx = x2 - x1
+			self.dy = y2 - y1
 
 		z1,y3,z2,y4	= xys1[1][0],xys1[1][1],xys2[1][0],xys2[1][1]
-		# hopefully y3 ~= y1 nd y4 ~= y2
-		if z1 == 1023: z1 = self.z1  
-		if z2 == 1023: z2 = self.z2 
-		
-		return (x1,y1,z1),(x2,y2,z2)
+		# hopefully y3 ~= y1 and y4 ~= y2
+		if z1  == 1023 and z2 == 1023: pass
+		elif z2 == 1023:
+			self.z1 = z1
+			self.z2 = z1 + self.dz
+		elif z1 == 1023: 
+			self.z2 = z2
+			self.z1 = z2 - self.dz
+		else:
+			self.z1 = z1
+			self.z2 = z2
+			self.dz = z2 -z1
+
 
 def IRParserFactory(n):
 	if n <= 0: 
