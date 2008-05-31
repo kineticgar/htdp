@@ -31,7 +31,7 @@ import math
 class AbstractIRParser:
 	
 	def __init__(self):
-		## nothing interesting here: just setting stuff to zero.
+		## We use a dictionary to store values
 		self.x1  = 0
 		self.x2  = 0
 		self.dx  = 0
@@ -41,7 +41,8 @@ class AbstractIRParser:
 		self.z1  = 0
 		self.z2  = 0
 		self.dz  = 0
-
+		
+		
 	def __getXY(self, data):
 		data = list(data)
 		## data three bytes of raw input from the remotes
@@ -79,7 +80,18 @@ class AbstractIRParser:
 		self.process(xys1,xys2)
 		return (self.x1,self.y1,self.z1),(self.x2,self.y2,self.z2)
 		
+	def aggregate(self,var1, var2, old1, old2, d):
 		
+		if var1  == 1023 and var2 == 1023: 
+			return old1,old2,d
+		elif var2 == 1023:
+			return var1, var1 + d, d
+		elif var1 == 1023: 
+			return var2 - d, var2, d
+		else:
+			return var1, var2, var1 - var2
+			
+			
 	def process(*args):
 		raise "Usage Error: AbstractIRParser must be sublassed to use process"
 		
@@ -100,24 +112,8 @@ class SingleIRParser(AbstractIRParser):
 		## If one dot goes off-screen, then we use the visible dot and the last known difference 
 		## between them. 
 		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
-		if x1 == 1023 and x2 == 1023: pass
-		elif x2 == 1023:
-			self.x1 = x1
-			self.y1 = y1
-			self.x2 = x1 + self.dx
-			self.y2 = y1 + self.dy
-		elif x1 == 1023:
-			self.x1 = x2 - self.dx
-			self.y1 = y2 - self.dy
-			self.x2 = x2
-			self.y2 = y2
-		else:
-			self.x1 = x1
-			self.y1 = y1
-			self.x2 = x2
-			self.y2 = y2
-			self.dx = x2 - x1
-			self.dy = y2 - y1
+		self.x1, self.x2, self.dx = self.aggregate(x1, x2, self.x1, self.x2, self.dx)
+		self.y1, self.y2, self.dy = self.aggregate(y1, y2, self.y1, self.y2, self.dy)
 		
 		self.z1 = 500- math.sqrt(self.dx**2 + self.dy**2 )
 		self.z2 = self.z1
@@ -141,39 +137,12 @@ class DoubleIRParser(AbstractIRParser):
 		
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		
-		if x1 == 1023 and x2 == 1023: pass
-		elif x2 == 1023:
-			self.x1 = x1
-			self.y1 = y1
-			self.x2 = x1 + self.dx
-			self.y2 = y1 + self.dy
-		elif x1 == 1023:
-			self.x1 = x2 - self.dx
-			self.y1 = y2 - self.dy
-			self.x2 = x2
-			self.y2 = y2
-		else:
-			self.x1 = x1
-			self.y1 = y1
-			self.x2 = x2
-			self.y2 = y2
-			self.dx = x2 - x1
-			self.dy = y2 - y1
-
+		self.x1, self.x2, self.dx = self.aggregate(x1, x2, self.x1, self.x2, self.dx)
+		self.y1, self.y2, self.dy = self.aggregate(y1, y2, self.y1, self.y2, self.dy)
+		
 		z1,y3,z2,y4	= xys1[1][0],xys1[1][1],xys2[1][0],xys2[1][1]
 		# hopefully y3 ~= y1 and y4 ~= y2
-		if z1  == 1023 and z2 == 1023: pass
-		elif z2 == 1023:
-			self.z1 = z1
-			self.z2 = z1 + self.dz
-		elif z1 == 1023: 
-			self.z2 = z2
-			self.z1 = z2 - self.dz
-		else:
-			self.z1 = z1
-			self.z2 = z2
-			self.dz = z2 -z1
-
+		self.z1, self.z2, self.dz = self.aggregate(z1, z2, self.z1, self.z2, self.dz)
 
 def IRParserFactory(n):
 	if n <= 0: 
