@@ -85,13 +85,25 @@ class AbstractIRParser:
 		if var1  == 1023 and var2 == 1023: 
 			return old1,old2,d
 		elif var2 == 1023:
-			return var1, var1 + d, d
+			## One dot has gone off-screen so they may have switched.
+			## We need to make sure they don't 'jump' by looking at the 
+			## difference between the new alue and both old ones. We'll
+			## assign the position of the dot to the closer of the two old ones
+			#print "Case 1",
+			if abs(var1 - old1) < abs(var1 - old2):
+				#print abs(var1 - old1) , abs(var1 - old2)
+				#print 'A'
+				return var1, var1 + d, d
+			else: 
+				return var1 - d, var1, d
 		elif var1 == 1023: 
-			return var2 - d, var2, d
+			if abs(var2 - old2) < abs(var2 - old1):
+				return var2 - d, var2, d
+			else: 
+				return var2 , var2  + d , d
 		else:
-			return var1, var2, var1 - var2
-			
-			
+			return var1, var2, var2 - var1
+		
 	def process(*args):
 		raise "Usage Error: AbstractIRParser must be sublassed to use process"
 		
@@ -117,8 +129,6 @@ class SingleIRParser(AbstractIRParser):
 		
 		self.z1 = 500- math.sqrt(self.dx**2 + self.dy**2 )
 		self.z2 = self.z1
-
-
 
 class DoubleIRParser(AbstractIRParser):	
 			
@@ -155,6 +165,4 @@ def IRParserFactory(n):
 		##Umm....
 		return DoubleIRParser()
 		
-		
-			
-	
+
