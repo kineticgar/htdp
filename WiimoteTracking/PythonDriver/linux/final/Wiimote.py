@@ -20,28 +20,6 @@ import threading
 import time	
 from bluetooth import set_packet_timeout, BluetoothSocket,L2CAP
 
-FEATURE_ENABLE = 0x04
-IR_MODE_EXP = 3
-CMD_SET_REPORT = 0x52
-RID_WMEM = 0x16
-RID_MODE = 0x12
-RID_IR_EN = 0x13
-RID_IR_EN2 = 0x1A
-MODE_ACC_IR = 0x33
-SET_MODE_IR = chr(CMD_SET_REPORT) + chr(RID_MODE) + chr(0) + chr(MODE_ACC_IR)
-
-	
-
-dataset = [
-		[ 0x04B00030,8],
-		[ 0x04B00006,0x90],
-		[ 0x04B00008, 0x41],
-		[ 0x04B0001A, 0x40],
-		[ 0x04B00033, 3],
-		[ 0x04B00030,8]
-		]	
-		
-		
 class Wiimote(threading.Thread):
 
 	def __init__(self,address):     
@@ -53,12 +31,13 @@ class Wiimote(threading.Thread):
 		self.sendSocket = BluetoothSocket( L2CAP )
 		self.data = None
               
-	def send(self,cmd, report, *data ):
-		for d in join(cmd, report, data ): print ord(d).__hex__()[2:],
-		print
-		self.sendSocket.send(join(cmd, report, data ))
+	def send(self, *data ):
+		#for d in join( data ): print ord(d).__hex__()[2:],
+		#print
+		self.sendSocket.send( reduce(lambda x, y: x + chr(y),data,'') )
 		    
 	def getData(self):
+		## self.data is kept current by __getData looping constantly
 		return self.data
 		    
 	def disconnect(self):
@@ -68,8 +47,11 @@ class Wiimote(threading.Thread):
 	def run(self):
 		## Continually receive data from the wiimote to avoid backlog. 
 		while 1:
+			self.__getData()
+			
+	def __getData(self):
 			self.data =  self.receiveSocket.recv(19)
-
+			
 	def connect(self):
 		""" Connects to the wiimote at address and enable IR
 			for much more information and clarity, see
@@ -104,7 +86,8 @@ class Wiimote(threading.Thread):
 		## 7. Write 0x08 to register 0xb00030 (again) 
 		self. send(0x52,0x16,0x4, 0xb0, 0x0, 0x30, 1, 0x08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);time.sleep(0.01)
 
-		## This turns the 1st led on.
+		## This turns the 1st led on. If the program runs and the LED remains off or flashing,
+		## then there is a problem. 
 		self.send(0x52,0x11,0x14) 
 
 		## Set up and start the data-receiving thread
@@ -113,15 +96,5 @@ class Wiimote(threading.Thread):
 		self.start() 
 		print "Connected to %s" % self.address
 		return 1
-
-			
-
-def join(cmd, report, data ):
-	c = chr(cmd) + chr(report)
-	for d in data:
-		c += chr(d)
-	return c
-
-
 
 

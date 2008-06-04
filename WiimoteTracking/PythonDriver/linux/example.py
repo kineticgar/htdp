@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 ## This file is part of the htdp project as part of Google Summer of Code
 ## Copyright (C) 2008 Chris Nicholls
 ##
@@ -44,9 +45,9 @@ from Animations.Head3D import Scene
 from Animations.PyGameBar import Dots
 #talker.register( Scene()  )
 talker.register( Printer() )
-#talker.register( Dots() )
-
-while 1: talker.refresh();time.sleep(0.01)
+talker.register( Dots() )
+#
+while 1: talker.refresh();#time.sleep(0.01)
 
 
 	

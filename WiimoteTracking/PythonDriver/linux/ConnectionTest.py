@@ -7,7 +7,7 @@ class ButtonParser:
 		self.A = 0
 
 	def parse(self,data):
-	
+		if data == None: return None,None
 		##on every channel, bytes 2 & 3 are button bytes. 
 		##we're actually going to look at just the A button
 		
