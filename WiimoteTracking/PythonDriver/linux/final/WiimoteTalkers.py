@@ -11,6 +11,7 @@ class Talker:
 		## parser doesn't know what to do with them. Niether do I actually...
 		
 		self.adrs=addresses
+		if len(self.adrs) ==0 : self.adrs = self.search()
 		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
 		self.parser = IRParserFactory(len(self.wiimotes))
 		self.listeners = []
@@ -18,11 +19,18 @@ class Talker:
 	def connect(self):
 		## Tries to connect to each address and returns true if everything went ok.
 		## TODO: if self.adrs is empty, do a sweep and find all willing remotes in range.
-		print "Searching for wiimotes..."
+		print "Connecting to wiimotes..."
 		return 	reduce(lambda x, y: x and y, [ wm.connect() for wm in self.wiimotes],True)
 		
-	
+	def search(self):
+		from bluetooth import discover_devices
+		print "Searching for wiimotes..."
+		wiimotes = discover_devices(3)
+		print "Found %i" % len(wiimotes)
+		return wiimotes
+		
 	def disconnect(self): 
+		print "Disconnecting"
 		# Disconnects from all wiimotes.
 		for wm in self. wiimotes: wm.disconnect()
 
@@ -34,9 +42,13 @@ class Talker:
 		
 		pos1,pos2 = self.parser.parse(data)
 		if pos1 and pos2: ## IR parser may return None...
+			result = True
 			for l in self.listeners:
-				l.refresh(pos1,pos2)
-			
+				result &= l.refresh(pos1,pos2)
+		if not result: 
+			self.disconnect()
+			import sys
+			sys.exit()	
 			
 	def register(self, listener):
 		## Adds a listener to the talker
@@ -45,13 +57,6 @@ class Talker:
 		
 		
 		
-class Printer:
-	## This is an example of a listener. Its refresh method simply prints the data
-	def __init__(self):
-		self.oldData = None
-	def refresh(self,(x1,y1,z1),(x2,y2,z2)):
-			if (x1,y1,z1,x2,y2,z2) != self.oldData:
-				print "x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2)
-				self.oldData = (x1,y1,z1,x2,y2,z2)
+
 	
 	

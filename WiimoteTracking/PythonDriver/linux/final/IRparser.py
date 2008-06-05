@@ -89,15 +89,18 @@ class AbstractIRParser:
 			## We need to make sure they don't 'jump' by looking at the 
 			## difference between the new alue and both old ones. We'll
 			## assign the position of the dot to the closer of the two old ones
-			#print "Case 1",
 			if abs(var1 - old1) < abs(var1 - old2):	
 					return var1, var1 + d, d
 			else: 	return var1 - d, var1, d
+			
 		elif var1 == 1023: 
+			## Same a above but for dot 1
 			if abs(var2 - old2) < abs(var2 - old1):
 					return var2 - d, var2, d
 			else: 	return var2 , var2  + d , d
+			
 		else:
+			#both dots are visible, so  just use them. 
 					return var1, var2, var2 - var1
 		
 	def process(*args):
@@ -113,7 +116,7 @@ class SingleIRParser(AbstractIRParser):
 		## y data from this remote can be returned directly for both ir points, and 
 		## if we assume that a line between the two points stays perpendicular to the 
 		## wiimote, we can use the length of this line as a metric for z
-		## This metric is pretty arbitrary right now. s
+		## This metric is pretty arbitrary right now.
 		
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
