@@ -23,9 +23,12 @@ class Talker:
 		return 	reduce(lambda x, y: x and y, [ wm.connect() for wm in self.wiimotes],True)
 		
 	def search(self):
-		from bluetooth import discover_devices
+		from bluetooth import discover_devices,lookup_name
 		print "Searching for wiimotes..."
 		wiimotes = discover_devices(3)
+		## We need to remove any non- wiimotes. it is possible some wiimotes
+		## do not pass this check however. 
+		wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
 		print "Found %i" % len(wiimotes)
 		return wiimotes
 		
@@ -36,16 +39,21 @@ class Talker:
 
 		
 	def refresh(self):
-		## refresh retrieves the data from each wiimote, parses them and 
-		## sends them to whoever is listening via the refresh method.
-		data  = [wm.getData() for wm in self.wiimotes]
-		
-		pos1,pos2 = self.parser.parse(data)
-		if pos1 and pos2: ## IR parser may return None...
-			result = True
-			for l in self.listeners:
-				result &= l.refresh(pos1,pos2)
-		if not result: 
+		try:
+			## refresh retrieves the data from each wiimote, parses them and 
+			## sends them to whoever is listening via the refresh method.
+			data  = [wm.getData() for wm in self.wiimotes]
+			
+			pos1,pos2 = self.parser.parse(data)
+			if pos1 and pos2: ## IR parser may return None...
+				result = True
+				for l in self.listeners:
+					result &= l.refresh(pos1,pos2)
+			if not result: 
+				self.disconnect()
+				import sys
+				sys.exit()	
+		except KeyboardInterrupt:
 			self.disconnect()
 			import sys
 			sys.exit()	

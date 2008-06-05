@@ -44,9 +44,10 @@ talker.connect() ##Connect to the wiimote
 ## Dots uses pygame to display what the wiimote sees.
 from Animations.Head3D import Scene
 from Animations.PyGameBar import Dots
+
 class Printer:
 	## This is an example of a listener. Its refresh method simply prints the data
-	## and returns True to indicate success.
+	## if it has changed, and returns True to indicate success.
 	def __init__(self):
 		self.oldData = None
 	def refresh(self,(x1,y1,z1),(x2,y2,z2)):
