@@ -41,6 +41,7 @@ class AbstractIRParser:
 		self.z1  = 0
 		self.z2  = 0
 		self.dz  = 0
+		self.buttonA = 0
 		
 		
 	def __getXY(self, data):
@@ -80,6 +81,16 @@ class AbstractIRParser:
 		self.process(xys1,xys2)
 		return (self.x1,self.y1,self.z1),(self.x2,self.y2,self.z2)
 		
+	def checkButtonA(self,data):
+		if data == None: return False
+		##on every channel, bytes 2 & 3 are button bytes. 
+		##we're actually going to look at just the A button
+		f = lambda e,d: ord(d[3]) & 0x08 or e
+		A = reduce(f,data, False)
+		t = self.buttonA
+		self.buttonA = A
+		return A and not t
+
 	def aggregate(self,var1, var2, old1, old2, d):
 		
 		if var1  == 1023 and var2 == 1023: 

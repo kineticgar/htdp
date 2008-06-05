@@ -39,25 +39,22 @@ class Talker:
 
 		
 	def refresh(self):
-		try:
-			## refresh retrieves the data from each wiimote, parses them and 
-			## sends them to whoever is listening via the refresh method.
-			data  = [wm.getData() for wm in self.wiimotes]
-			
-			pos1,pos2 = self.parser.parse(data)
-			if pos1 and pos2: ## IR parser may return None...
-				result = True
-				for l in self.listeners:
-					result &= l.refresh(pos1,pos2)
-			if not result: 
-				self.disconnect()
-				import sys
-				sys.exit()	
-		except KeyboardInterrupt:
+
+		## refresh retrieves the data from each wiimote, parses them and 
+		## sends them to whoever is listening via the refresh method.
+		## if any listener returns false, or the a button is pressed on a remote
+		## then we disconnect and quit. 
+		data  = [wm.getData() for wm in self.wiimotes]
+		pos1,pos2 = self.parser.parse(data)
+		if pos1 and pos2: ## IR parser may return None...
+			result = True
+			for l in self.listeners:
+				result &= l.refresh(pos1,pos2)
+		if not result or self.parser.checkButtonA(data): 
 			self.disconnect()
 			import sys
 			sys.exit()	
-			
+
 	def register(self, listener):
 		## Adds a listener to the talker
 		self.listeners += [listener]
