@@ -41,12 +41,14 @@ class Wiimote(threading.Thread):
 		return self.data
 		    
 	def disconnect(self):
+		self.r = 0
 		self.receiveSocket.close()
 		self.sendSocket.close()	
 		    
 	def run(self):
 		## Continually receive data from the wiimote to avoid backlog. 
-		while 1:
+		self.r = 1
+		while self.r:
 			self.__getData()
 			
 	def __getData(self):

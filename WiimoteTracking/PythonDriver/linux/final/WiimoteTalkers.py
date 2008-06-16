@@ -1,8 +1,22 @@
-#from wmd.WMManager import WMManager
+## This file is part of the htdp project as part of Google Summer of Code
+## Copyright (C) 2008 Chris Nicholls
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+## 
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 from Wiimote import Wiimote
-from IRparser import IRParserFactory
-
-
+from	CoordinateTrackers import CoordinateTrackerFactory
+from IRparser import IRparser
 class Talker:
 	
 	def __init__(self,*addresses):
@@ -13,12 +27,12 @@ class Talker:
 		self.adrs=addresses
 		if len(self.adrs) ==0 : self.adrs = self.search()
 		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
-		self.parser = IRParserFactory(len(self.wiimotes))
+		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes))
+		self.irParser = IRparser()
 		self.listeners = []
 		
 	def connect(self):
 		## Tries to connect to each address and returns true if everything went ok.
-		## TODO: if self.adrs is empty, do a sweep and find all willing remotes in range.
 		print "Connecting to wiimotes..."
 		return 	reduce(lambda x, y: x and y, [ wm.connect() for wm in self.wiimotes],True)
 		
@@ -36,21 +50,25 @@ class Talker:
 		print "Disconnecting"
 		# Disconnects from all wiimotes.
 		for wm in self. wiimotes: wm.disconnect()
-
 		
 	def refresh(self):
-
 		## refresh retrieves the data from each wiimote, parses them and 
 		## sends them to whoever is listening via the refresh method.
 		## if any listener returns false, or the a button is pressed on a remote
 		## then we disconnect and quit. 
 		data  = [wm.getData() for wm in self.wiimotes]
-		pos1,pos2 = self.parser.parse(data)
+		xys1, xys2 = self.irParser.parseWiiData( data )
+		
+		self.coordinateTracker.process( xys1, xys2 )
+		pos1,pos2 = self.coordinateTracker.getCoordinates()
+		
 		if pos1 and pos2: ## IR parser may return None...
 			result = True
 			for l in self.listeners:
 				result &= l.refresh(pos1,pos2)
-		if not result or self.parser.checkButtonA(data): 
+		## if one of the listeners wants us to exit, or if the A button is pressed
+		## on any remote, then exit.
+		if not result or self.irParser.checkButtonA(data): 
 			self.disconnect()
 			import sys
 			sys.exit()	
@@ -60,8 +78,4 @@ class Talker:
 		self.listeners += [listener]
 		
 		
-		
-		
 
-	
-	

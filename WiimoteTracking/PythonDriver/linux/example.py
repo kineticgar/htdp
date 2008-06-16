@@ -21,10 +21,10 @@ sys.path.append('.')
 
 from final.WiimoteTalkers import *
 ##address = '00:19:FD:ED:E1:25'  ## address of my wiimote
-##address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
+address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
 ## These could be passed to talker to connect to them specifically, but 
 ## specifying no addresses causes the Talker to search for remotes anyway.
-talker  = Talker() 
+talker  = Talker(address2) 
 ## A talker has the following methods:
 ## connect() -- connects to any  wiimotes it knows the address for
 ## disconnect() -- quite similar to connect. 
@@ -44,6 +44,7 @@ talker.connect() ##Connect to the wiimote
 ## Dots uses pygame to display what the wiimote sees.
 from Animations.Head3D import Scene
 from Animations.PyGameBar import Dots
+#from Animations.Chess import Board
 
 class Printer:
 	## This is an example of a listener. Its refresh method simply prints the data
