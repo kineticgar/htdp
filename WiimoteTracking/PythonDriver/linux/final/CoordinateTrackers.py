@@ -29,8 +29,11 @@
 ## -SingleIRRawCoordinates justreturns the parsed data from the wiimote 
 
 import math
-
-class :
+pi = math.pi
+cos = math.cos
+sin = math.sin
+distanceBetweenIRLEDsInmm = 155
+class CoordinateTracker:
 
 	def __init__(self):
 		## We use a dictionary to store values
@@ -49,6 +52,24 @@ class :
 	def getCoordinates(self):
 		return (self.x1,self.y1,self.z1), (self.x2,self.y2,self.z2)
 	
+
+	def process(*args):
+		raise "Usage Error: AbstractIRParser must be subclassed to use process"	
+
+class SingleIRRawCoordinates( CoordinateTracker ):
+	##this class will just return the coordinate data form the wiimote
+	## without any error correction, 1023s and all. (1023 is what the 
+	## wiimote sends if it can't see any IR dots
+	def process(self, xys1, xys2 ):
+		## Check its being used as a single parser...
+		assert len(xys1) == 1 == len(xys2)		
+		self.x1,self.y1 = xys1[0][0],xys1[0][1]
+		self.x2,self.y2 = xys2[0][0],xys2[0][1]
+
+		## self.z1,z2 = 0 always. 
+			
+			
+class SingleCoordinateTracker( CoordinateTracker ):		
 	def correctErrors(self,var1, var2, old1, old2, d):
 		if var1  == 1023 and var2 == 1023: 
 					return old1,old2,d
@@ -70,24 +91,6 @@ class :
 		else:
 			#both dots are visible, so  just use them. 
 					return var1, var2, var2 - var1
-		
-	def process(*args):
-		raise "Usage Error: AbstractIRParser must be subclassed to use process"	
-
-class SingleIRRawCoordinates( CoordinateTracker ):
-	##this class will just return the coordinate data form the wiimote
-	## without any error correction, 1023s and all. (1023 is what the 
-	## wiimote sends if it can't see any IR dots
-	def process(self, xys1, xys2 ):
-		## Check its being used as a single parser...
-		assert len(xys1) == 1 == len(xys2)		
-		self.x1,self.y1 = xys1[0][0],xys1[0][1]
-		self.x2,self.y2 = xys2[0][0],xys2[0][1]
-		## self.z1,z2 = 0 always. 
-			
-			
-class SingleCoordinateTracker( CoordinateTracker ):		
-
 	def  process(self, xys1,xys2 ):
 		
 		## Check its being used as a single parser...
@@ -106,8 +109,28 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		self.x1, self.x2, self.dx = self.correctErrors(x1, x2, self.x1, self.x2, self.dx)
 		self.y1, self.y2, self.dy = self.correctErrors(y1, y2, self.y1, self.y2, self.dy)
 		
-		self.z1 = 500- math.sqrt(self.dx**2 + self.dy**2 )
-		self.z2 = self.z1
+		## if both points are visible and are at more or less the same height,
+		## we can use thier distance apart to calculate thier depth. 
+		## The following code is not easy to explain in comments, you probably need
+		## to sit down with a pencil and some paper to understand it.
+		
+		if not 1023 in (x1,x2) and abs(y1-y2)<100:
+			anglePerPixel = 0.00076774014017345872 ## pi/(4*1024)
+			## the wiimote has a horizontal field of view of pi/4 (45 degrees) spread 
+			## over 1024 pixels.
+			## the pi/8 come from the fact that a pixel reading of 0 indicates an angle of 
+			## pi/8 off center. 
+			
+			theta1 = anglePerPixel * min(self.x1,self.x2)- pi/8
+			theta2 = anglePerPixel * max(self.x1,self.x2)- pi/8
+			k = sin(theta2 - theta1)
+			if k!=0: ## div by zero...
+				## by changing distance..mm you can callibrate the tracker.
+				## z will be the distance from the wiimote in mm. 
+				z = distanceBetweenIRLEDsInmm*cos(theta1)*cos(theta2)/k
+			else: z = self.z1
+			self.z1 = z
+			self.z2 = z
 
 class DoubleCoordinateTracker( CoordinateTracker ):	
 			
@@ -126,12 +149,12 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		
-		self.x1, self.x2, self.dx = self.correctErrors(x1, x2, self.x1, self.x2, self.dx)
-		self.y1, self.y2, self.dy = self.correctErrors(y1, y2, self.y1, self.y2, self.dy)
+		self.x1, self.x2, self.dx = x1,x2,x1-x2
+		self.y1, self.y2, self.dy = y1,y2,y1-y2
 		
 		z1,y3,z2,y4	= xys1[1][0],xys1[1][1],xys2[1][0],xys2[1][1]
 		# hopefully y3 ~= y1 and y4 ~= y2
-		self.z1, self.z2, self.dz = self.correctErrors(z1, z2, self.z1, self.z2, self.dz)
+		self.z1, self.z2, self.dz = z1,z2,z1-z2
 
 def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
