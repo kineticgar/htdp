@@ -47,10 +47,10 @@ class Talker:
 		return wiimotes
 		
 	def disconnect(self): 
-		print "Disconnecting"
+		
 		# Disconnects from all wiimotes.
 		for wm in self. wiimotes: wm.disconnect()
-		
+		print "Disconnecting"
 	def refresh(self):
 		## refresh retrieves the data from each wiimote, parses them and 
 		## sends them to whoever is listening via the refresh method.

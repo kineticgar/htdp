@@ -27,12 +27,12 @@
 ##  CoordinateTrackerFactory. This is a factory method that  will return
 ##  a SingleCoordinateTracker or DoubleCoordinateTracker depending on its argument n. 
 ## -SingleIRRawCoordinates justreturns the parsed data from the wiimote 
-
+import time
 import math
 pi = math.pi
 cos = math.cos
 sin = math.sin
-distanceBetweenIRLEDsInmm = 155
+tan = math.tan
 class CoordinateTracker:
 
 	def __init__(self):
@@ -69,7 +69,8 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 		## self.z1,z2 = 0 always. 
 			
 			
-class SingleCoordinateTracker( CoordinateTracker ):		
+class SingleCoordinateTracker( CoordinateTracker ):	
+	distanceBetweenIRLEDsInmm = 160	
 	def correctErrors(self,var1, var2, old1, old2, d):
 		if var1  == 1023 and var2 == 1023: 
 					return old1,old2,d
@@ -115,46 +116,54 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		## to sit down with a pencil and some paper to understand it.
 		
 		if not 1023 in (x1,x2) and abs(y1-y2)<100:
-			anglePerPixel = 0.00076774014017345872 ## pi/(4*1024)
+			anglePerPixel = 0.0007677 ## pi/(4*1024)
 			## the wiimote has a horizontal field of view of pi/4 (45 degrees) spread 
 			## over 1024 pixels.
 			## the pi/8 come from the fact that a pixel reading of 0 indicates an angle of 
 			## pi/8 off center. 
 			
-			theta1 = anglePerPixel * min(self.x1,self.x2)- pi/8
-			theta2 = anglePerPixel * max(self.x1,self.x2)- pi/8
+			theta1 = anglePerPixel * min(self.x1,self.x2)
+			theta2 = anglePerPixel * max(self.x1,self.x2)
 			k = sin(theta2 - theta1)
-			if k!=0: ## div by zero...
+			if k>0.005: ## div by zero...
 				## by changing distance..mm you can callibrate the tracker.
 				## z will be the distance from the wiimote in mm. 
-				z = distanceBetweenIRLEDsInmm*cos(theta1)*cos(theta2)/k
+				z = self.distanceBetweenIRLEDsInmm*cos(theta2-theta1)/k
 			else: z = self.z1
 			self.z1 = z
 			self.z2 = z
 
 class DoubleCoordinateTracker( CoordinateTracker ):	
-			
+	distBetweenWiimotes = 190
+	scalingForZ = 1024*distBetweenWiimotes/(2*tan(pi/8))
+	anglePerPixel = 0.0007677
+	print scalingForZ
 	def process(self, xys1,xys2 ):
 		assert 1 < len(xys1) == len(xys2)
-		## We have data from at least two wiimotes. We'llonly look at the first two for now
+		## We have data from at least two wiimotes. We'll only look at the first two for now
 		
-		## Currently this is a very crude approximation of the position of the dots
-		## It assumes remotes are at 90 degrees, equal height and that 
-		## the wii remotes field of view is linear not radial. 
-
-		## For the moment, x & y data comes form wm1 so the code is a direct copy from above.
-		## z data comes from the second wiimote.z\
-		## both sets of data should have more or less the same vertical height,
-		## assuming equal distance from the wiimotes
+		## Again, it's hard to explain the following code without a diagram.
+		## We're assuming that two wiimotes are parallel and the ditance between them is
+		## distBetweenWiimotes
+		## The larger this value, the more accurate the calculations will be, but the
+		## field of view will be smaller. 	
 		
-		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
-		
-		self.x1, self.x2, self.dx = x1,x2,x1-x2
-		self.y1, self.y2, self.dy = y1,y2,y1-y2
-		
-		z1,y3,z2,y4	= xys1[1][0],xys1[1][1],xys2[1][0],xys2[1][1]
-		# hopefully y3 ~= y1 and y4 ~= y2
-		self.z1, self.z2, self.dz = z1,z2,z1-z2
+		x1,x2,= xys1[0][0],xys1[1][0]
+		x3,x4 = xys2[0][0],xys2[1][0]
+		y1,y2,= xys1[0][1],xys1[1][1]
+		y3,y4 = xys2[0][1],xys2[1][1]
+		if not 1023 in (x1,x2):
+			a = abs(x1-x2)
+			if a != 0:
+				self.z1 = self.scalingForZ/a
+				self.x1 = self.distBetweenWiimotes*(x1-512)/a
+				self.y1 = self.distBetweenWiimotes*(y1-300)/a
+		if not 1023 in (x3,x4):
+			b = abs(x3-x4)
+			if b !=0:
+	 			self.z2 = self.scalingForZ/b	
+	 			self.x2 = self.distBetweenWiimotes*(x3-512)/b
+	 			self.y2 = self.distBetweenWiimotes*(y3-300)/b
 
 def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
