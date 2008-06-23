@@ -136,7 +136,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 class DoubleCoordinateTracker( CoordinateTracker ):	
 	distBetweenWiimotes = 190
 	scalingForZ = 1024*distBetweenWiimotes/(2*tan(pi/8))
-	anglePerPixel = 0.0007677
+	anglePerPixel = 0.00076774014017345872
 	print scalingForZ
 	def process(self, xys1,xys2 ):
 		assert 1 < len(xys1) == len(xys2)

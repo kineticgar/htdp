@@ -77,5 +77,21 @@ class Talker:
 		## Adds a listener to the talker
 		self.listeners += [listener]
 		
-		
+class Socket:
+	## This sends out the refresh data on the specified port
+	## usage:
+	##talker.register( Socket() )
+	##talker.register( Socket( port = 5035) 
+	def __init__(self,host = "",port=4440):
+		import sys, socket
+		try:
+			self.mySocket = socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
+			self.mySocket.connect ( ( '', port ) )
+			self.refresh = self._refresh
+		except socket.error:
+			print "Socket.error: 111, Connection Refused"
+	def refresh(*args): return True			
+	def _refresh(self,(x1,y1,z1),(x2,y2,z2)):
+                mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2))
+                return True		
 
