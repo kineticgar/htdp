@@ -92,6 +92,6 @@ class Socket:
 			print "Socket.error: 111, Connection Refused"
 	def refresh(*args): return True			
 	def _refresh(self,(x1,y1,z1),(x2,y2,z2)):
-                mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2))
+                self.mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2))
                 return True		
 
