@@ -137,7 +137,6 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 	distBetweenWiimotes = 190
 	scalingForZ = 1024*distBetweenWiimotes/(2*tan(pi/8))
 	anglePerPixel = 0.00076774014017345872
-	print scalingForZ
 	def process(self, xys1,xys2 ):
 		assert 1 < len(xys1) == len(xys2)
 		## We have data from at least two wiimotes. We'll only look at the first two for now
@@ -148,10 +147,27 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		## The larger this value, the more accurate the calculations will be, but the
 		## field of view will be smaller. 	
 		
-		x1,x2,= xys1[0][0],xys1[1][0]
-		x3,x4 = xys2[0][0],xys2[1][0]
-		y1,y2,= xys1[0][1],xys1[1][1]
-		y3,y4 = xys2[0][1],xys2[1][1]
+		x1,x2,= xys1[0][0],xys1[1][0] ## the first x coordinate from each remote
+		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
+		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
+		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
+		## we need to check thet the first dot from each remote  reffers to the same led. 
+		## We'll do this by comparing the abgle between each point
+		
+		dx1 = x3 - x1
+		dx2 = x4 - x2
+		dy1 = y3 - y1
+		dy2 = y4 - y2
+		if dx1 == 0 or dx2 ==0:
+			if dy1*dy2 < 0:
+				x2,x4,y2,y4 = x4,x2,y4,y2
+		else:
+			tanTheta1 = tan(1.0*dy1/dx1)
+			tanTheta2 = tan(1.0*dy2/dx2)
+			if abs(tanTheta1 - tanTheta2) > abs(tanTheta1 + tanTheta2):
+				x2,x4,y2,y4 = x4,x2,y4,y2
+			
+		
 		if not 1023 in (x1,x2):
 			a = abs(x1-x2)
 			if a != 0:
@@ -165,7 +181,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 	 			self.x2 = self.distBetweenWiimotes*(x3-512)/b
 	 			self.y2 = self.distBetweenWiimotes*(y3-300)/b
 
-def CoordinateTrackerFactory(n,correctErrors = True):
+def CoordinateTrackerFactory(n,correctErrors = False):
 	if n <= 0: 
 		raise "Cannot parse data of zero length!"
 	if n == 1: 
