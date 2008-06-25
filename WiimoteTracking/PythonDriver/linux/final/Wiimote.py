@@ -34,6 +34,7 @@ class Wiimote(threading.Thread):
 	def send(self, *data ):
 		#for d in join( data ): print ord(d).__hex__()[2:],
 		#print
+		
 		self.sendSocket.send( reduce(lambda x, y: x + chr(y),data,'') )
 		    
 	def getData(self):
@@ -59,6 +60,7 @@ class Wiimote(threading.Thread):
 			for much more information and clarity, see
 			http://wiibrew.org/index.php?title=Wiimote
 		"""
+		print "Trying to connect to %s" % self.address
 		## Port 19 is where the data will be found
 		## Port 17 is the one we want to send our data on.
 		self.receiveSocket.connect( ( self.address, 19 ) )
@@ -80,7 +82,7 @@ class Wiimote(threading.Thread):
 		self. send(0x52,0x16,0x04,0xb0,0x00,0x30, 1, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );time.sleep(0.01)
 		## 4. Write Sensitivity Block 1 to registers at 0xb00000
 		self. send(0x52,0x16,0x4, 0xb0, 0x0, 0x6, 1, 0x90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);time.sleep(0.01)
-		self. send(0x52,0x16,0x4, 0xb0, 0x0, 0x8, 1, 0xC0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);time.sleep(0.01)
+		self. send(0x52,0x16,0x4, 0xb0, 0x0, 0x8, 1, 0x41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);time.sleep(0.01)
 		## 5. Write Sensitivity Block 2 to registers at 0xb0001a
 		self. send(0x52,0x16,0x4, 0xb0, 0x0, 0x1a, 1, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);time.sleep(0.01)
 		## 6. Write Mode Number to register 0xb00033

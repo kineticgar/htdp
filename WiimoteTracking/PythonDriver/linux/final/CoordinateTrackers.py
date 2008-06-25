@@ -181,7 +181,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 	 			self.x2 = self.distBetweenWiimotes*(x3-512)/b
 	 			self.y2 = self.distBetweenWiimotes*(y3-300)/b
 
-def CoordinateTrackerFactory(n,correctErrors = False):
+def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
 		raise "Cannot parse data of zero length!"
 	if n == 1: 

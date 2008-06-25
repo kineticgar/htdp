@@ -14,10 +14,13 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+import threading
 from Wiimote import Wiimote
 from	CoordinateTrackers import CoordinateTrackerFactory
 from IRparser import IRparser
-class Talker:
+import time
+class Talker(threading.Thread):
 	
 	def __init__(self,*addresses):
 		## Accepts an arbitrary number of wiimote addresses as an argument
@@ -30,27 +33,36 @@ class Talker:
 		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes))
 		self.irParser = IRparser()
 		self.listeners = []
-		
+		threading.Thread.__init__ (self)
 	def connect(self):
 		## Tries to connect to each address and returns true if everything went ok.
 		print "Connecting to wiimotes..."
-		return 	reduce(lambda x, y: x and y, [ wm.connect() for wm in self.wiimotes],True)
+		return 	not False in [ wm.connect() for wm in self.wiimotes]
 		
 	def search(self):
 		from bluetooth import discover_devices,lookup_name
 		print "Searching for wiimotes..."
-		wiimotes = discover_devices(3)
+		wiimotes = discover_devices(10)
 		## We need to remove any non- wiimotes. it is possible some wiimotes
 		## do not pass this check however. 
-		wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
-		print "Found %i" % len(wiimotes)
+		print "Found %i devices" % len(wiimotes)
+		wiimotes = filter(lambda x: x[:8]=='00:19:FD', wiimotes)	
+		#wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
+		print "Found %i wiimotes" % len(wiimotes)
 		return wiimotes
 		
-	def disconnect(self): 
-		
+	def disconnect(self):
 		# Disconnects from all wiimotes.
+		self.r = False
 		for wm in self. wiimotes: wm.disconnect()
 		print "Disconnecting"
+
+	def run(self,pause = 0.01):
+		self.r = True
+		while self.r: 	
+			self.refresh()
+			time.sleep(pause)
+			
 	def refresh(self):
 		## refresh retrieves the data from each wiimote, parses them and 
 		## sends them to whoever is listening via the refresh method.
@@ -58,8 +70,8 @@ class Talker:
 		## then we disconnect and quit. 
 		data  = [wm.getData() for wm in self.wiimotes]
 		xys1, xys2 = self.irParser.parseWiiData( data )
-		
-		self.coordinateTracker.process( xys1, xys2 )
+		if xys1 and xys2:
+			self.coordinateTracker.process( xys1, xys2 )
 		pos1,pos2 = self.coordinateTracker.getCoordinates()
 		
 		if pos1 and pos2: ## IR parser may return None...
@@ -76,6 +88,10 @@ class Talker:
 	def register(self, listener):
 		## Adds a listener to the talker
 		self.listeners += [listener]
+	def getNumberOfWiimotes(self):
+		return len(self.adrs)
+	def getWiimoteAddress(self):
+		return self.adrs
 		
 class Socket:
 	## This sends out the refresh data on the specified port
@@ -84,6 +100,7 @@ class Socket:
 	##talker.register( Socket( port = 5035) 
 	def __init__(self,host = "",port=4440):
 		import sys, socket
+		self.data = None
 		try:
 			self.mySocket = socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
 			self.mySocket.connect ( ( '', port ) )
@@ -92,6 +109,8 @@ class Socket:
 			print "Socket.error: 111, Connection Refused"
 	def refresh(*args): return True			
 	def _refresh(self,(x1,y1,z1),(x2,y2,z2)):
-                self.mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2))
-                return True		
+				if (x1,y1,z1,x2,y2,z2)!= self.data:
+					self.mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1\n" % (x1,y1,z1,x2,y2,z2)) ###
+					self.data = (x1,y1,z1,x2,y2,z2)
+   				return True		
 
