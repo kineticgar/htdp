@@ -21,19 +21,23 @@ from	CoordinateTrackers import CoordinateTrackerFactory
 from IRparser import IRparser
 import time
 class Talker(threading.Thread):
-	
+	useScaling = False
 	def __init__(self,*addresses):
 		## Accepts an arbitrary number of wiimote addresses as an argument
 		## Currently, any remotes past the first two are ignored, as the IR
 		## parser doesn't know what to do with them. Niether do I actually...
-		
+
 		self.adrs=addresses
+		if len(self.adrs) ==1 and type(self.adrs[0]) == list:
+			self.adrs = self.adrs[0]
 		if len(self.adrs) ==0 : self.adrs = self.search()
+		
 		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
 		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes))
 		self.irParser = IRparser()
 		self.listeners = []
 		threading.Thread.__init__ (self)
+		
 	def connect(self):
 		## Tries to connect to each address and returns true if everything went ok.
 		print "Connecting to wiimotes..."
@@ -62,7 +66,7 @@ class Talker(threading.Thread):
 		while self.r: 	
 			self.refresh()
 			time.sleep(pause)
-			
+	
 	def refresh(self):
 		## refresh retrieves the data from each wiimote, parses them and 
 		## sends them to whoever is listening via the refresh method.
@@ -73,7 +77,9 @@ class Talker(threading.Thread):
 		if xys1 and xys2:
 			self.coordinateTracker.process( xys1, xys2 )
 		pos1,pos2 = self.coordinateTracker.getCoordinates()
-		
+		if self.useNormalisation:
+			pos1 = self.normalise(pos1)
+			pos2 = self.normalise(pos2)
 		if pos1 and pos2: ## IR parser may return None...
 			result = True
 			for l in self.listeners:
@@ -85,32 +91,48 @@ class Talker(threading.Thread):
 			import sys
 			sys.exit()	
 
+
+	def callibrate(self,MAX=(800,600,1024),howLong = 5):
+		## Use this to callibrate the output of the coordinate trackers
+		## it loops round, recordng the range of values sent by the 
+		## coordinateTracker. 
+		print "Starting callibration..."
+		startTime = time.time()
+		minxyzs,maxxyzs = [2*31]*3,[-2**31]*3##+- inf...not nice but it will do. 
+		while time.time() -startTime < howLong:
+			self.refresh()
+			(x1,y1,z1),(x2,y2,z2) = self.coordinateTracker.getCoordinates()
+			minxyzs = [min(minxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
+			maxxyzs = [max(minxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
+		self.useNormalisation = True ## This is used in refresh()
+		self.minxyzs,self.maxxyzs = minxyzs,maxxyzs
+		self.scalings=[	MAX[0]/(1.+self.maxxyzs[0]-self.minxyzs[0]), ## +1 to avoiud zero div error
+						MAX[1]/(1.+self.maxxyzs[1]-self.minxyzs[1]), ## and turn the expression into float.
+						MAX[2]/(1.+self.maxxyzs[2]-self.minxyzs[2])] ## min <= max  so adding one is sufficient
+		print "Callibration done."
+		
+	def normalise(self,(x,y,z),returnAsInt= True):
+		## scales the cooridinate to inside the limits set by callibrate.
+		## Should only be called after callibrate has been called. 
+		x -= self.minxyzs[0]
+		y -= self.minxyzs[1]
+		z -= self.minxyzs[2]
+		x *= self.scalings[0]
+		y *= self.scalings[1]	
+		z *= self.scalings[2]
+		if returnAsInt:
+			return map(int,[x,y,z])
+		return x,y,z
+			
+			
 	def register(self, listener):
 		## Adds a listener to the talker
 		self.listeners += [listener]
+		
 	def getNumberOfWiimotes(self):
 		return len(self.adrs)
+		
 	def getWiimoteAddress(self):
 		return self.adrs
 		
-class Socket:
-	## This sends out the refresh data on the specified port
-	## usage:
-	##talker.register( Socket() )
-	##talker.register( Socket( port = 5035) 
-	def __init__(self,host = "",port=4440):
-		import sys, socket
-		self.data = None
-		try:
-			self.mySocket = socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
-			self.mySocket.connect ( ( '', port ) )
-			self.refresh = self._refresh
-		except socket.error:
-			print "Socket.error: 111, Connection Refused"
-	def refresh(*args): return True			
-	def _refresh(self,(x1,y1,z1),(x2,y2,z2)):
-				if (x1,y1,z1,x2,y2,z2)!= self.data:
-					self.mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1\n" % (x1,y1,z1,x2,y2,z2)) ###
-					self.data = (x1,y1,z1,x2,y2,z2)
-   				return True		
 
