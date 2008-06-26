@@ -16,17 +16,34 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
+"""
+Co-ordinate tracker:
+-SingleCoordinateTracker should be used for a single wiimote
+-DoubleCoordinateTracker shold be used for two or more
+-Both do some error correction to give sensible results.
+-CoordinateTrackercontains common code for single and double
+ which both inherit from CoordinateTracker
+ If your unsure how many wiimotes you will have at run time , use 
+ CoordinateTrackerFactory. This is a factory method that  will return
+ a SingleCoordinateTracker or DoubleCoordinateTracker depending on its argument n. 
+-SingleIRRawCoordinates justreturns the parsed data from the wiimote 
 
-## Co-ordinate tracker:
-## -SingleCoordinateTracker should be used for a single wiimote
-## -DoubleCoordinateTracker shold be used for two or more
-## -Both do some error correction to give sensible results.
-## -CoordinateTrackercontains common code for single and double
-##  which both inherit from CoordinateTracker
-##  If your unsure how many wiimotes you will have at run time , use 
-##  CoordinateTrackerFactory. This is a factory method that  will return
-##  a SingleCoordinateTracker or DoubleCoordinateTracker depending on its argument n. 
-## -SingleIRRawCoordinates justreturns the parsed data from the wiimote 
+A Co-ordinate tracker should satisfy tthe following interface:
+
+CoordinateTracker:
+
+	getCoordinates() -> coordinatePair
+	process([coordinate],[coordinate]) 
+	
+	where:
+		coordinate :: (int,int,int)
+		coordinatePair :: (coordinate,coordinate)
+	The two lists passed to process should be a list of each wiimotes 
+	view of two ir dots (eg, if there is only one wiimte the args might be this:
+	process( [ (34,100) ] , [ (560,76) ] )
+	This could be updated to support four dots.
+	
+"""
 import time
 import math
 pi = math.pi
@@ -73,7 +90,8 @@ class SingleCoordinateTracker( CoordinateTracker ):
 	distanceBetweenIRLEDsInmm = 160	
 	def correctErrors(self,var1, var2, old1, old2, d):
 		if var1  == 1023 and var2 == 1023: 
-					return old1,old2,d
+			## Both dots are out of range so use the last good data
+			return old1,old2,d
 		elif var2 == 1023:
 			## One dot has gone off-screen so they may have switched.
 			## We need to make sure they don't 'jump' by looking at the 
@@ -167,7 +185,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			if abs(tanTheta1 - tanTheta2) > abs(tanTheta1 + tanTheta2):
 				x2,x4,y2,y4 = x4,x2,y4,y2
 			
-		
+		## Now we can do the psudo triangulation. 
 		if not 1023 in (x1,x2):
 			a = abs(x1-x2)
 			if a != 0:
@@ -183,7 +201,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 
 def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
-		raise "Cannot parse data of zero length!"
+		print "Cannot parse data of zero length!"
 	if n == 1: 
 		if correctErrors:
 			return SingleCoordinateTracker()
