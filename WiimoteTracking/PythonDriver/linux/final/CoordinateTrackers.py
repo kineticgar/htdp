@@ -154,7 +154,6 @@ class SingleCoordinateTracker( CoordinateTracker ):
 class DoubleCoordinateTracker( CoordinateTracker ):	
 	distBetweenWiimotes = 190
 	scalingForZ = 1024*distBetweenWiimotes/(2*tan(pi/8))
-	anglePerPixel = 0.00076774014017345872
 	def process(self, xys1,xys2 ):
 		assert 1 < len(xys1) == len(xys2)
 		## We have data from at least two wiimotes. We'll only look at the first two for now
@@ -170,13 +169,15 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
 		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
 		## we need to check thet the first dot from each remote  reffers to the same led. 
-		## We'll do this by comparing the abgle between each point
+		## We'll do this by comparing the angle between each point
 		
 		dx1 = x3 - x1
 		dx2 = x4 - x2
 		dy1 = y3 - y1
 		dy2 = y4 - y2
-		if dx1 == 0 or dx2 ==0:
+		if 1023 in (x1,x2,x3,x4):
+			pass
+		elif dx1 == 0 or dx2 ==0:
 			if dy1*dy2 < 0:
 				x2,x4,y2,y4 = x4,x2,y4,y2
 		else:
@@ -184,7 +185,8 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			tanTheta2 = tan(1.0*dy2/dx2)
 			if abs(tanTheta1 - tanTheta2) > abs(tanTheta1 + tanTheta2):
 				x2,x4,y2,y4 = x4,x2,y4,y2
-			
+				
+
 		## Now we can do the psudo triangulation. 
 		if not 1023 in (x1,x2):
 			a = abs(x1-x2)
@@ -202,6 +204,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
 		print "Cannot parse data of zero length!"
+		return SingleIRRawCoordinates()
 	if n == 1: 
 		if correctErrors:
 			return SingleCoordinateTracker()
