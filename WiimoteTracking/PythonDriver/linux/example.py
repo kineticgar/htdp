@@ -18,13 +18,13 @@
 
 import sys,time
 sys.path.append('.')
-import psyco;psyco.full()
 from final.WiimoteTalkers import *
 address1 = '00:19:FD:ED:E1:25'  ## address of my wiimote
 address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
 ## These could be passed to talker to connect to them specifically, but 
 ## specifying no addresses causes the Talker to search for remotes anyway.
-talker  = Talker(address2,address1) 
+talker  = Talker(address1,address2) 
+
 ## A talker has the following methods:
 ## connect() -- connects to any  wiimotes it knows the address for
 ## disconnect() -- quite similar to connect. 
@@ -44,25 +44,18 @@ talker.connect() ##Connect to the wiimote
 ## Dots uses pygame to display what the wiimote sees.
 from Animations.Head3D import Scene
 from Animations.PyGameDots import Dots
+from final.Listeners import *
 from Animations.SimpleCubes import Scene
+from Animations.Arrow import Scene
 
-class Printer:
-	## This is an example of a listener. Its refresh method simply prints the data
-	## if it has changed, and returns True to indicate success.
-	def __init__(self):
-		self.oldData = None
-	def refresh(self,(x1,y1,z1),(x2,y2,z2)):
-			if (x1,y1,z1,x2,y2,z2) != self.oldData:
-				print "x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1" % (x1,y1,z1,x2,y2,z2)
-				self.oldData = (x1,y1,z1,x2,y2,z2)
-			return True
-
-#talker.register( Scene()  )
-talker.register( Printer() )
-#talker.register( Dots() )
-#
-while 1: talker.refresh();#time.sleep(0.01)
-
-
-	
+talker.register( Scene()  )
+#talker.register( Printer() )
+#talker.register( Socket() )
+#	talker.register( Dots() )
+#talker.callibrate()
+while 1: 
+		t0 =time.time()
+		for i in range(100):
+			talker.refresh();time.sleep(0.01)
+		#print 100/(time.time()-t0) ,'fps'
 

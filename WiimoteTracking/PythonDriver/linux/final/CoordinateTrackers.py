@@ -168,25 +168,15 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
 		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
 		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
-		## we need to check thet the first dot from each remote  reffers to the same led. 
-		## We'll do this by comparing the angle between each point
-		
-		dx1 = x3 - x1
-		dx2 = x4 - x2
-		dy1 = y3 - y1
-		dy2 = y4 - y2
+		## for the moment we won't deal with incomplete data.
 		if 1023 in (x1,x2,x3,x4):
-			pass
-		elif dx1 == 0 or dx2 ==0:
-			if dy1*dy2 < 0:
-				x2,x4,y2,y4 = x4,x2,y4,y2
-		else:
-			tanTheta1 = tan(1.0*dy1/dx1)
-			tanTheta2 = tan(1.0*dy2/dx2)
-			if abs(tanTheta1 - tanTheta2) > abs(tanTheta1 + tanTheta2):
-				x2,x4,y2,y4 = x4,x2,y4,y2
-				
-
+			return
+		## we need to check thet the first dot from each remote  reffers to the same led. 
+		## We'll do this by looking at the dot product of the the vectors defined 
+		## by each pair of points.
+		if (x3-x1)*(x4-x2)+(y3-y1)*(y4-y2)<0:	 
+			x2,x4,y2,y4 = x4,x2,y2,y4
+			
 		## Now we can do the psudo triangulation. 
 		if not 1023 in (x1,x2):
 			a = abs(x1-x2)
@@ -200,6 +190,8 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 	 			self.z2 = self.scalingForZ/b	
 	 			self.x2 = self.distBetweenWiimotes*(x3-512)/b
 	 			self.y2 = self.distBetweenWiimotes*(y3-300)/b
+	 	self.size = math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
+	 	#print 400<self.size<500, x1,x2,x3,x4,y1,y2,y3,y4,self.size
 
 def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 

@@ -21,7 +21,7 @@ from	CoordinateTrackers import CoordinateTrackerFactory
 from IRparser import IRparser
 import time
 class Talker(threading.Thread):
-	useScaling = False
+	useNormalisation = False
 	def __init__(self,*addresses):
 		## Accepts an arbitrary number of wiimote addresses as an argument
 		## Currently, any remotes past the first two are ignored, as the IR
@@ -96,6 +96,7 @@ class Talker(threading.Thread):
 		## Use this to callibrate the output of the coordinate trackers
 		## it loops round, recordng the range of values sent by the 
 		## coordinateTracker. 
+		## So when this is being called, the IR dots should be waved about a bit. 
 		print "Starting callibration..."
 		startTime = time.time()
 		minxyzs,maxxyzs = [2*31]*3,[-2**31]*3##+- inf...not nice but it will do. 

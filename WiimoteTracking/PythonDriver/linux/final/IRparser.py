@@ -56,7 +56,7 @@ class IRparser:
 		return xys1,xys2
 		
 	def checkButtonA(self,data):
-		if data == None: return False
+		if data == None or len(data) <3: return False
 		##on every channel, bytes 2 & 3 are button bytes. 
 		##we're actually going to look at just the A button
 		f = lambda e,d: ord(d[3]) & 0x08 or e
