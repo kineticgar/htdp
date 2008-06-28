@@ -87,72 +87,51 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 			
 			
 class SingleCoordinateTracker( CoordinateTracker ):	
-	distanceBetweenIRLEDsInmm = 160	
-	def correctErrors(self,var1, var2, old1, old2, d):
-		if var1  == 1023 and var2 == 1023: 
-			## Both dots are out of range so use the last good data
-			return old1,old2,d
-		elif var2 == 1023:
-			## One dot has gone off-screen so they may have switched.
-			## We need to make sure they don't 'jump' by looking at the 
-			## difference between the new alue and both old ones. We'll
-			## assign the position of the dot to the closer of the two old ones
-			if abs(var1 - old1) < abs(var1 - old2):	
-					return var1, var1 + d, d
-			else: 	return var1 - d, var1, d
-			
-		elif var1 == 1023: 
-			## Same a above but for dot 1
-			if abs(var2 - old2) < abs(var2 - old1):
-					return var2 - d, var2, d
-			else: 	return var2 , var2  + d , d
-			
-		else:
-			#both dots are visible, so  just use them. 
-					return var1, var2, var2 - var1
+	distanceBetweenIRLEDsInmm = 152
+	scalingForZ = 1024*distanceBetweenIRLEDsInmm/(2*tan(pi/8))
+	
 	def  process(self, xys1,xys2 ):
 		
 		## Check its being used as a single parser...
 		assert len(xys1) == 1 == len(xys2)
-		## right we only have data frm one wiimote to work with. That means x and
-		## y data from this remote can be returned directly for both ir points, and 
-		## if we assume that a line between the two points stays perpendicular to the 
-		## wiimote, we can use the length of this line as a metric for z
-		## This metric is pretty arbitrary right now.
+	
 		
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
 		## If one dot goes off-screen, then we use the visible dot and the last known difference 
 		## between them. 
 		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
-		self.x1, self.x2, self.dx = self.correctErrors(x1, x2, self.x1, self.x2, self.dx)
-		self.y1, self.y2, self.dy = self.correctErrors(y1, y2, self.y1, self.y2, self.dy)
 		
-		## if both points are visible and are at more or less the same height,
-		## we can use thier distance apart to calculate thier depth. 
-		## The following code is not easy to explain in comments, you probably need
-		## to sit down with a pencil and some paper to understand it.
 		
-		if not 1023 in (x1,x2) and abs(y1-y2)<100:
-			anglePerPixel = 0.0007677 ## pi/(4*1024)
-			## the wiimote has a horizontal field of view of pi/4 (45 degrees) spread 
-			## over 1024 pixels.
-			## the pi/8 come from the fact that a pixel reading of 0 indicates an angle of 
-			## pi/8 off center. 
+		if 1023 in(x1,x2) and self.z1!=0:
+			d = self.scalingForZ/self.z1
+		else:
+			d = math.sqrt((x2-x1)**2+(y2-y1)**2)
+		if d !=0:
+			self.z1 = self.scalingForZ/d
+			self.z2 = self.z1
 			
-			theta1 = anglePerPixel * min(self.x1,self.x2)
-			theta2 = anglePerPixel * max(self.x1,self.x2)
-			k = sin(theta2 - theta1)
-			if k>0.005: ## div by zero...
-				## by changing distance..mm you can callibrate the tracker.
-				## z will be the distance from the wiimote in mm. 
-				z = self.distanceBetweenIRLEDsInmm*cos(theta2-theta1)/k
-			else: z = self.z1
-			self.z1 = z
-			self.z2 = z
-
+			if x1==1023 and x2 == 1023:
+				pass
+			elif x2 == 1023:
+				self.x1=self.distanceBetweenIRLEDsInmm*(x1-512)/d
+				self.y1=self.distanceBetweenIRLEDsInmm*(y1-512)/d#
+				self.x2 = self.x1 + self.dx
+				self.y2 = self.y1 + self.dy
+			elif x1 == 1023:
+				self.x2=self.distanceBetweenIRLEDsInmm*(x2-512)/d
+				self.y2=self.distanceBetweenIRLEDsInmm*(y2-300)/d
+				self.x1 = self.x2 - self.dx
+				self.y1 = self.y2 - self.dy
+			else:
+				self.x1=self.distanceBetweenIRLEDsInmm*(x1-512)/d
+				self.y1=self.distanceBetweenIRLEDsInmm*(y1-300)/d
+				self.x2=self.distanceBetweenIRLEDsInmm*(x2-512)/d
+				self.y2=self.distanceBetweenIRLEDsInmm*(y2-300)/d
+				self.dx = self.x2-self.x1
+				self.dy = self.y2-self.y1
 class DoubleCoordinateTracker( CoordinateTracker ):	
-	distBetweenWiimotes = 190
+	distBetweenWiimotes = 100
 	scalingForZ = 1024*distBetweenWiimotes/(2*tan(pi/8))
 	def process(self, xys1,xys2 ):
 		assert 1 < len(xys1) == len(xys2)
@@ -179,18 +158,19 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			
 		## Now we can do the psudo triangulation. 
 		if not 1023 in (x1,x2):
-			a = abs(x1-x2)
+			a = math.sqrt((x2-x1)**2+(y2-y1)**2)
 			if a != 0:
 				self.z1 = self.scalingForZ/a
 				self.x1 = self.distBetweenWiimotes*(x1-512)/a
 				self.y1 = self.distBetweenWiimotes*(y1-300)/a
 		if not 1023 in (x3,x4):
-			b = abs(x3-x4)
+			b = math.sqrt((x4-x3)**2+(y4-y3)**2)
 			if b !=0:
 	 			self.z2 = self.scalingForZ/b	
 	 			self.x2 = self.distBetweenWiimotes*(x3-512)/b
 	 			self.y2 = self.distBetweenWiimotes*(y3-300)/b
 	 	self.size = math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
+	 	print self.size
 	 	#print 400<self.size<500, x1,x2,x3,x4,y1,y2,y3,y4,self.size
 
 def CoordinateTrackerFactory(n,correctErrors = True):
