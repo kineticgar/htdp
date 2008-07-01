@@ -65,10 +65,21 @@ class CoordinateTracker:
 		self.dz  = 0
 		self.buttonA = 0
 
-	
+	def size(self):
+		return math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
 	def getCoordinates(self):
 		return (self.x1,self.y1,self.z1), (self.x2,self.y2,self.z2)
-	
+		
+	def correct(self,v1,v2,old1,old2,dv,factor,shift =0):
+			if v1==1023 and v2 == 1023:
+				return old1,old2,dv
+			elif v2 == 1023:
+				return (v1-shift)*factor ,(v1-shift)*factor  + dv, dv
+			elif v1 == 1023:
+				return (v2-shift)*factor - dv,(v2-shift)*factor ,dv
+			else:
+				return (v1-shift)*factor , (v2-shift)*factor,  (v2-shift)*factor - (v1-shift)*factor
+
 
 	def process(*args):
 		raise "Usage Error: AbstractIRParser must be subclassed to use process"	
@@ -87,10 +98,10 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 			
 			
 class SingleCoordinateTracker( CoordinateTracker ):	
-	distanceBetweenIRLEDsInmm = 152
+	distanceBetweenIRLEDsInmm = 152.
 	scalingForZ = 1024*distanceBetweenIRLEDsInmm/(2*tan(pi/8))
 	
-	def  process(self, xys1,xys2 ):
+	def  process(self, xys1,xys2,factor = None,shiftx = 512,shifty = 384 ):
 		
 		## Check its being used as a single parser...
 		assert len(xys1) == 1 == len(xys2)
@@ -100,40 +111,25 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		## between them. 
 		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
 		
-		
 		if 1023 in(x1,x2) and self.z1!=0:
 			d = self.scalingForZ/self.z1
+			## if we cant see both points, assume distance is constant. 
 		else:
-			d = math.sqrt((x2-x1)**2+(y2-y1)**2)
-		if d !=0:
+			d = math.sqrt((x2-x1)**2+(y2-y1)**2) ## 
+		if d !=0: ## once things get going, this is almost certain to pass, but it will fail initially
 			self.z1 = self.scalingForZ/d
 			self.z2 = self.z1
+			if not factor:factor = self.distanceBetweenIRLEDsInmm/d
+			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx,factor,shiftx)
+			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy,factor,shifty)
 			
-			if x1==1023 and x2 == 1023:
-				pass
-			elif x2 == 1023:
-				self.x1=self.distanceBetweenIRLEDsInmm*(x1-512)/d
-				self.y1=self.distanceBetweenIRLEDsInmm*(y1-512)/d#
-				self.x2 = self.x1 + self.dx
-				self.y2 = self.y1 + self.dy
-			elif x1 == 1023:
-				self.x2=self.distanceBetweenIRLEDsInmm*(x2-512)/d
-				self.y2=self.distanceBetweenIRLEDsInmm*(y2-300)/d
-				self.x1 = self.x2 - self.dx
-				self.y1 = self.y2 - self.dy
-			else:
-				self.x1=self.distanceBetweenIRLEDsInmm*(x1-512)/d
-				self.y1=self.distanceBetweenIRLEDsInmm*(y1-300)/d
-				self.x2=self.distanceBetweenIRLEDsInmm*(x2-512)/d
-				self.y2=self.distanceBetweenIRLEDsInmm*(y2-300)/d
-				self.dx = self.x2-self.x1
-				self.dy = self.y2-self.y1
+		#print self.size()	
 class DoubleCoordinateTracker( CoordinateTracker ):	
 
-	def __init__(self):
-		self.tracker1 = SingleCoordinateTracker()
-		self.tracker2 = SingleCoordinateTracker()
-		
+
+	tracker1 = SingleCoordinateTracker()
+	tracker2 = SingleCoordinateTracker()
+	oldx = 0
 	def process(self, xys1,xys2 ):
 		assert 1 < len(xys1) == len(xys2)
 
@@ -141,17 +137,24 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
 		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
 		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
- 		## we need to check thet the first dot from each remote  reffers to the same led. 
-        ## We'll do this by looking at the dot product of the the vectors defined 
-        ## by each pair of points.
-		if (x3-x1)*(x4-x2)+(y3-y1)*(y4-y2)<0:    
-			x2,x4,y2,y4 = x4,x2,y2,y4
-                
-		self.tracker1.process([(x1,y1)],[(x2,y2)])
-		self.tracker2.process([(x3,y3)],[(x4,y4)])
-		self.x1,self.y1,self.z1= self.tracker1.getCoordinates()[0]
-		self.x2,self.y2,self.z2 = self.tracker2.getCoordinates()[0]
+		## we need to check thet the first dot from each remote  reffers to the same led. 
+		## We'll do this by looking at the dot product of the the vectors defined 
+		## by each pair of points.
+
 		
+		if 1023 not in (x1,x2,x3,x4):
+			if (x3-x1)*(x4-x2)+(y3-y1)*(y4-y2)<0:    
+					x2,x4,y2,y4 = x4,x2,y2,y4
+		self.tracker1.process([(x1,y1)],[(x2,y2)])	                
+		self.tracker2.process([(x3,y3)],[(x4,y4)])
+			
+		self.x1,self.y1,self.z1 = self.tracker1.getCoordinates()[0]
+		self.x2,self.y2,self.z2 = self.tracker2.getCoordinates()[0]
+		self.dx = self.x2 - self.x1
+		self.dy = self.y2 - self.y1	
+		self.dz = self.z2 - self.z1	
+
+
 
 def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
