@@ -85,18 +85,15 @@ class CoordinateTracker:
 
 
 	def process(*args):
-		raise "Usage Error: AbstractIRParser must be subclassed to use process"	
+		raise "Usage Error: CoordinateTracker must be subclassed to use process"	
 
 class SingleIRRawCoordinates( CoordinateTracker ):
 	##this class will just return the coordinate data form the wiimote
 	## without any error correction, 1023s and all. (1023 is what the 
 	## wiimote sends if it can't see any IR dots
 	def process(self, xys1, xys2 ):
-		## Check its being used as a single parser...
-		assert len(xys1) == 1 == len(xys2)		
 		self.x1,self.y1 = xys1[0][0],xys1[0][1]
 		self.x2,self.y2 = xys2[0][0],xys2[0][1]
-
 		## self.z1,z2 = 0 always. 
 			
 			
@@ -125,31 +122,49 @@ class SingleCoordinateTracker( CoordinateTracker ):
 			if not factor:factor = self.distanceBetweenIRLEDsInmm/d
 			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx,factor,shiftx)
 			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy,factor,shifty)
-			
-		#print self.size()	
-import pygame		
-class Dots:
-	def __init__(self,n = 10,colour =(0, 0, 0) ):
+
+
+class ClassToDetectIfTwoPointsSwapPosition:
+	cs  = [0,0,0,0] 
+	def check(self,x1,y1,x2,y2):
+		x3,y3,x4,y4 = self.cs
+		if 1023 not in (x1,x2):
+			if (x2-x1)*(x4-x3)+(y2-y1)*(y4-y3)<0:    
+				self.cs = [x2,y2,x1,y1]
+				return True
+			else: 
+				self.cs = [x1,y1,x2,y2]
+				return False
+		elif x1 != 1023:
+			if self.dist(x1,y1,x3,y3) > self.dist(x1,y1,x4,y4):
+				self.cs = [x3,y3,x1,y1]
+				return True
+			else: 
+				self.cs = [x1,y1,x4,y4]
+				return False#
+		elif x2 != 1023:
+			if self.dist(x2,y2,x4,y4) > self.dist(x2,y2,x3,y3):
+				self.cs = [x2,y2,x4,y4]
+				return True
+			else: 
+				self.cs = [x3,y3,x2,y2]
+				return False#
+		else: return False
+	def dist(self,x1,y1,x2,y2):
+		return (x1-x2)**2 + (y1-y2)**2
 		
-		self.bgcolor = 255, 255, 255
-		self.linecolor = colour
-		self.screen = pygame.display.set_mode((1000, 800))
-		pygame.draw.circle(self.screen, self.linecolor, (10,10), 30)
-		self.screen.fill(self.bgcolor)
-	 	pygame.display.flip()
-	def draw(self,x1,y1,c):
-		pygame.draw.circle(self.screen,c,(x1, y1),2)	
-		pygame.display.flip()
+
 class DoubleCoordinateTracker( CoordinateTracker ):	
 	old =0,0
 	#graph = Dots()
 	tracker1 = SingleCoordinateTracker()
 	tracker2 = SingleCoordinateTracker()
+	swapper1 = ClassToDetectIfTwoPointsSwapPosition()
+	swapper2 = ClassToDetectIfTwoPointsSwapPosition()
 	switch = False
 	visible = 15
 	def process(self, xys1,xys2 ):
-		assert 1 < len(xys1) == len(xys2)
-
+	
 		x1,x2,= xys1[0][0],xys1[1][0] ## the first x coordinate from each remote
 		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
 		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
@@ -157,27 +172,36 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		## we need to check thet the first dot from each remote  reffers to the same led. 
 		## We'll do this by looking at the dot product of the the vectors defined 
 		## by each pair of points.
-
+		update  = True
 		visible = reduce((lambda x,y: (x << 1) + (y!=1023)),(x1,x2,x3,x4),0)
 		if visible == 15: self.visible = 15
 		else: self.visible &=visible
+		update &= self.visible not in (0,1,2,4,8)
+		
+	
+		
+		if self.swapper1.check(x1,y1,x3,y3):
+			print '#',
+			x1,y1,x3,y3 = x3,y3,x1,y1
+		else: print '~',
+		if self.swapper2.check(x2,y2,x4,y4):
+			print '#',
+			x2,y2,x4,y4 = x4,y4,x2,y2
+		else: print '~',
+		update &= (1023,1023) not in [(x1,x2),(x3,x4)]
 		if 1023 not in (x1,x2,x3,x4):
 			if (x3-x1)*(x4-x2)+(y3-y1)*(y4-y2)<0:    
-					self.switch = True
-										
+				self.switch = True
 			else: 
 				self.switch = False
-		for x in(x1,x2,x3,x4,y1,y2,y3,y4):
-			if x ==1023: print '###',
-			else: print  '%03i' %x,
-			
+	
 		if self.switch:
+			print 'S',
 			x2,x4,y2,y4 = x4,x2,y4,y2
-			print 's',
-		else: print '~',
-
-		
-		if not self.visible in (0,1,2,4,8):
+		else: print ' ',
+		update &= (x1 != 1023  and x2 != 1023) or (x3 != 1023 and x4 != 1023)
+		if update:
+			
 			self.tracker1.process([(x1,y1)],[(x2,y2)])	                
 			self.tracker2.process([(x3,y3)],[(x4,y4)])
 				
@@ -186,11 +210,11 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			self.dx = self.x2 - self.x1
 			self.dy = self.y2 - self.y1	
 			self.dz = self.z2 - self.z1	
-		print "%04i" % self.length(),
-		if 160< self.length() < 240:
-			print '|||'
-		else:
-			print '<<<'
+		for x in(x1,x2,x3,x4,y1,y2,y3,y4):
+			if x ==1023: print '###',
+			else: print  '%03i' %x,
+		print int(self.length())
+
 
 
 def CoordinateTrackerFactory(n,correctErrors = True):
