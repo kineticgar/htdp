@@ -17,26 +17,25 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import sys,time
-sys.path.append('.')
-from final.WiimoteTalkers import *
+from final.Wiimote3dTracking import Wiimote3dtracker
 address1 = '00:19:FD:ED:E1:25'  ## address of my wiimote
 address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
-## These could be passed to talker to connect to them specifically, but 
-## specifying no addresses causes the Talker to search for remotes anyway.
-talker  = Talker(address1,address2) 
+## These could be passed to tracker to connect to them specifically, but 
+## specifying no addresses causes the tracker to search for remotes anyway.
+tracker  = Wiimote3dTracker(address1,address2) 
 
-## A talker has the following methods:
+## A tracker has the following methods:
 ## connect() -- connects to any  wiimotes it knows the address for
 ## disconnect() -- quite similar to connect. 
 ##
 ## register( listener ) 
 ## refresh()
-## a listener is anything that has a refresh(pos ,axis) method. When talker.register( newListener )
-## is called, newLitener is added to the list of talkers current listeners. Upon calling 
-## talker.refresh() refresh( pos, axis) is called for each of the registered listeners,
+## a listener is anything that has a refresh(pos ,axis) method. When tracker.register( newListener )
+## is called, newLitener is added to the list of trackers current listeners. Upon calling 
+## tracker.refresh() refresh( pos, axis) is called for each of the registered listeners,
 ## where pos and axis are the processed data from the wiimotes. 
 
-talker.connect() ##Connect to the wiimote
+tracker.connect() ##Connect to the wiimote
 
 ## These are various ways of dealing with the data.
 ## Scene is a 3D head tracking  scene using python visual
@@ -46,16 +45,14 @@ from Animations.Head3D import Scene
 from Animations.PyGameDots import Dots
 from final.Listeners import *
 from Animations.SimpleCubes import Scene
-from Animations.Arrow import Scene
+#from Animations.Arrow import Scene
 
-talker.register( Scene()  )
-#talker.register( Printer() )
-#talker.register( Socket() )
-#	talker.register( Dots() )
-#talker.callibrate()
+tracker.register( Scene()  )
+tracker.register( Printer() )
+#tracker.register( Socket() )
+#	tracker.register( Dots() )
+#tracker.callibrate()
 while 1: 
-		t0 =time.time()
-		for i in range(100):
-			talker.refresh();time.sleep(0.01)
-		#print 100/(time.time()-t0) ,'fps'
+	tracker.refresh()
+	time.sleep(0.01)
 

@@ -17,10 +17,10 @@
 
 import threading
 from Wiimote import Wiimote
-from	CoordinateTrackers import CoordinateTrackerFactory
+from CoordinateTrackers import CoordinateTrackerFactory
 from IRparser import IRparser
 import time
-class Talker(threading.Thread):
+class Wiimote3dTracker(threading.Thread):
 	useNormalisation = False
 	def __init__(self,*addresses):
 		## Accepts an arbitrary number of wiimote addresses as an argument
@@ -46,11 +46,12 @@ class Talker(threading.Thread):
 	def search(self):
 		from bluetooth import discover_devices,lookup_name
 		print "Searching for wiimotes..."
-		wiimotes = discover_devices(10)
+		wiimotes = discover_devices(0)
 		## We need to remove any non- wiimotes. it is possible some wiimotes
 		## do not pass this check however. 
 		print "Found %i devices" % len(wiimotes)
-		wiimotes = filter(lambda x: x[:8]=='00:19:FD', wiimotes)	
+		#wiimotes = filter(lambda x: x[:8]=='00:19:FD', wiimotes)	
+		#for wm in wiimotes: print lookup_name(wm)
 		#wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
 		print "Found %i wiimotes" % len(wiimotes)
 		return wiimotes
@@ -77,16 +78,17 @@ class Talker(threading.Thread):
 		if xys1 and xys2:
 			self.coordinateTracker.process( xys1, xys2 )
 		pos1,pos2 = self.coordinateTracker.getCoordinates()
-		if self.useNormalisation:
-			pos1 = self.normalise(pos1)
-			pos2 = self.normalise(pos2)
+		
 		if pos1 and pos2: ## IR parser may return None...
+			if self.useNormalisation:
+				pos1 = self._normalise(pos1)
+				pos2 = self._normalise(pos2)
 			result = True
 			for l in self.listeners:
 				result &= l.refresh(pos1,pos2)
 		## if one of the listeners wants us to exit, or if the A button is pressed
 		## on any remote, then exit.
-		if not result or self.irParser.checkButtonA(data): 
+		if not result:# or self.irParser.checkButtonA(data): 
 			self.disconnect()
 			import sys
 			sys.exit()	
@@ -112,7 +114,7 @@ class Talker(threading.Thread):
 						MAX[2]/(1.+self.maxxyzs[2]-self.minxyzs[2])] ## min <= max  so adding one is sufficient
 		print "Callibration done."
 		
-	def normalise(self,(x,y,z),returnAsInt= True):
+	def _normalise(self,(x,y,z),returnAsInt= True):
 		## scales the cooridinate to inside the limits set by callibrate.
 		## Should only be called after callibrate has been called. 
 		x -= self.minxyzs[0]
@@ -133,7 +135,7 @@ class Talker(threading.Thread):
 	def getNumberOfWiimotes(self):
 		return len(self.adrs)
 		
-	def getWiimoteAddress(self):
+	def getWiimoteAddresses(self):
 		return self.adrs
 		
 
