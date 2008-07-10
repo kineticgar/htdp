@@ -93,7 +93,7 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 	## wiimote sends if it can't see any IR dots
 	def process(self, xys1, xys2 ):
 		self.x1,self.y1 = xys1[0][0],xys1[0][1]
-		self.x2,self.y2 = xys2[0][0],xys2[0][1]
+		self.dx,self.dy = xys2[0][0]-self.x1,xys2[0][1]-self.y1
 		## self.z1,z2 = 0 always. 
 			
 			
@@ -102,7 +102,6 @@ class SingleCoordinateTracker( CoordinateTracker ):
 	scalingForZ = 1024*distanceBetweenIRLEDsInmm/(2*tan(pi/8))
 	
 	def  process(self, xys1,xys2,factor = None,shiftx = 512,shifty = 384 ):
-		
 		## Check its being used as a single parser...
 		assert len(xys1) == 1 == len(xys2)
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
@@ -110,7 +109,6 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		## If one dot goes off-screen, then we use the visible dot and the last known difference 
 		## between them. 
 		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
-		
 		if 1023 in(x1,x2) and self.z1!=0:
 			d = self.scalingForZ/self.z1
 			## if we cant see both points, assume distance is constant. 
@@ -124,11 +122,22 @@ class SingleCoordinateTracker( CoordinateTracker ):
 			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy,factor,shifty)
 
 
-class ClassToDetectIfTwoPointsSwapPosition:
+class ClassToDetectIfTwoPointsSwapPosition:	
+	## Does what it says on the tin. 
+	## 
 	cs  = [0,0,0,0] 
 	def check(self,x1,y1,x2,y2):
-		x3,y3,x4,y4 = self.cs
-		if 1023 not in (x1,x2):
+		x3,y3,x4,y4 = self.cs ## These are the last good  values 
+		## so check returns true if it thinks
+		##    (x1,y1) ~ (x3,y3) relate to the same point and 
+		##    (x2,y2) ~ (x4,y4) relate to the same point.
+		if 1023 not in (x1,x2): ## This implies y1,y2 != 1023
+			## since all points are visible, we can guess if the points 
+			## have switched direction by taking the dot porduct of
+			## (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4) 
+			## If they point in the same direction (the dot product 
+			## is positive) we assume thay have not switched, and if
+			## it is negative, we assume they have.
 			if (x2-x1)*(x4-x3)+(y2-y1)*(y4-y3)<0:    
 				self.cs = [x2,y2,x1,y1]
 				return True
@@ -136,20 +145,32 @@ class ClassToDetectIfTwoPointsSwapPosition:
 				self.cs = [x1,y1,x2,y2]
 				return False
 		elif x1 != 1023:
-			if self.dist(x1,y1,x3,y3) > self.dist(x1,y1,x4,y4):
+			## The second point has gone off-screen so we guess that the 
+			## first point refers to the closer of the two old ones. 
+			if self.dist(x1,y1,x3,y3) < self.dist(x1,y1,x4,y4):
+				## Its closer to the old first point, so everything is ok
+				## Replace the first value, use the old second one
+				self.cs = [x1,y1,x4,y4]
+				return False
+			else: 
+				## It's closer to the second one so update the second
+				## point and reuse the first. 
 				self.cs = [x3,y3,x1,y1]
 				return True
-			else: 
-				self.cs = [x1,y1,x4,y4]
-				return False#
 		elif x2 != 1023:
-			if self.dist(x2,y2,x4,y4) > self.dist(x2,y2,x3,y3):
+			## Exactly the same as above, but now the second point is
+			## visible. 
+			if self.dist(x2,y2,x4,y4) < self.dist(x2,y2,x3,y3):
+				self.cs = [x3,y3,x2,y2]
+				return False
+			else: 
 				self.cs = [x2,y2,x4,y4]
 				return True
-			else: 
-				self.cs = [x3,y3,x2,y2]
-				return False#
-		else: return False
+		else: 
+			## Neither point is visible so we can't tell anything
+			return False
+		
+		
 	def dist(self,x1,y1,x2,y2):
 		return (x1-x2)**2 + (y1-y2)**2
 		
@@ -169,17 +190,21 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
 		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
 		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
-		## we need to check thet the first dot from each remote  reffers to the same led. 
-		## We'll do this by looking at the dot product of the the vectors defined 
-		## by each pair of points.
+		for x in(x1,x2,x3,x4,y1,y2,y3,y4):
+			if x ==1023: print '###',
+			else: print  '%03i' %x,
+		## update tells us if we have enough info to update the coordinates
 		update  = True
+		## visible is a bitmask of the points that are visible
 		visible = reduce((lambda x,y: (x << 1) + (y!=1023)),(x1,x2,x3,x4),0)
-		if visible == 15: self.visible = 15
-		else: self.visible &=visible
-		update &= self.visible not in (0,1,2,4,8)
+		if visible == 15: self.visible = 15 ## we can see everythong
+		else: self.visible &=visible ## take away the points we can't see
+		update &= self.visible not in (0,1,2,4,8) ##If we've lost sight of three
+		## or more dots, then we don't want to update until we see then all again
 		
 	
-		
+		## we need to check thet the first dot from each remote  refers to the same led. 
+		## Luckily, we have a handy class for this. 
 		if self.swapper1.check(x1,y1,x3,y3):
 			print '#',
 			x1,y1,x3,y3 = x3,y3,x1,y1
@@ -188,20 +213,30 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			print '#',
 			x2,y2,x4,y4 = x4,y4,x2,y2
 		else: print '~',
-		update &= (1023,1023) not in [(x1,x2),(x3,x4)]
+		
+		
+		
 		if 1023 not in (x1,x2,x3,x4):
+			## this is a way of telling if we have the two dots mixed
+			## up from one remote. This shouldn't happen because of the 
+			## swapper code above, though it may occasionly happen due
+			## to rapid movement. It uses the dot product to tell if 
+			## the vectors  (x1,y1)->(x3,y3) and (x2,y2)->(x4,y4) 
+			## point in the same direction			
 			if (x3-x1)*(x4-x2)+(y3-y1)*(y4-y2)<0:    
+				## since we can't tell whats gone wrong, we'll have to guess
+				## which points switch. We want to keep this going
+				print 'S',
 				self.switch = True
-			else: 
-				self.switch = False
-	
-		if self.switch:
-			print 'S',
-			x2,x4,y2,y4 = x4,x2,y4,y2
+				x2,x4,y2,y4 = x4,x2,y4,y2
+			else: print '-',	
 		else: print ' ',
-		update &= (x1 != 1023  and x2 != 1023) or (x3 != 1023 and x4 != 1023)
+		## if we've lost sight of one led totaly, then don't update
+		update &= (1023,1023) not in [(x1,x2),(x3,x4)]
+		
+		#update &= (x1 != 1023  and x2 != 1023) or (x3 != 1023 and x4 != 1023)
 		if update:
-			
+			print 'U',
 			self.tracker1.process([(x1,y1)],[(x2,y2)])	                
 			self.tracker2.process([(x3,y3)],[(x4,y4)])
 				
@@ -210,14 +245,12 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			self.dx = self.x2 - self.x1
 			self.dy = self.y2 - self.y1	
 			self.dz = self.z2 - self.z1	
-		for x in(x1,x2,x3,x4,y1,y2,y3,y4):
-			if x ==1023: print '###',
-			else: print  '%03i' %x,
+		else: print ' ',
 		print int(self.length())
 
 
 
-def CoordinateTrackerFactory(n,correctErrors = True):
+def CoordinateTrackerFactory(n,correctErrors = False):
 	if n <= 0: 
 		print "Cannot parse data of zero length!"
 		return SingleIRRawCoordinates()
