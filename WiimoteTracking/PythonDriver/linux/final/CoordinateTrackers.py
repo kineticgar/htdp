@@ -50,6 +50,9 @@ pi = math.pi
 cos = math.cos
 sin = math.sin
 tan = math.tan
+def cross(v1,v2):
+	return v1[0]*v2[0] + v1[1]*v2[1]
+
 class CoordinateTracker:
 
 	def __init__(self):
@@ -121,15 +124,15 @@ class SingleCoordinateTracker( CoordinateTracker ):
 			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx,factor,shiftx)
 			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy,factor,shifty)
 
-		
+
+	
 
 class DoubleCoordinateTracker( CoordinateTracker ):	
-
-	#graph = Dots()
-	tracker = SingleCoordinateTracker()
-	getCoordinates = tracker.getCoordinates
-	
-	switch = False
+	old =0,0
+	oldVectors = (0,0),(0,0)
+	tracker1 = SingleCoordinateTracker()
+	tracker2 = SingleCoordinateTracker()
+	switch = 0
 	visible = 15
 	def process(self, xys1,xys2 ):
 	
@@ -137,17 +140,71 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
 		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
 		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
+
+		## update tells us if we have enough info to update the coordinates
+		update  = True
+		## visible is a bitmask of the points that are visible
+		visible = reduce((lambda x,y: (x << 1) + (y!=1023)),(x1,x2,x3,x4),0)
+		if visible == 15: self.visible = 15 ## we can see everythong
+		else: self.visible &=visible ## take away the points we can't see
+		update &= self.visible not in (0,1,2,4,8) ##If we've lost sight of three
+		## or more dots, then we don't want to update until we see then all again
 		
-		if not 1023 in (x1,x3):
-			p1 = (x1+x3)/2,(y1+y3)/2
-		else: p1 = 1023,1023
-		if not 1023 in (x2,x4):
-			p2 = (x2+x4)/2,(y1+y3)/2
-		else: p2 = 1023,1023
-			
-		self.tracker.process([p1],[p2])
+
 		
+		if 1023 not in (x1,x2,x3,x4):
+			## this is a way of telling if we have the two dots mixed
+			## up from one remote. This shouldn't happen because of the 
+			## swapper code above, though it may occasionly happen due
+			## to rapid movement. It uses the dot product to tell if 
+			## the vectors  (x1,y1)->(x3,y3) and (x2,y2)->(x4,y4) 
+			## point in the same direction			
+			v1,v2 = ((x3-x1),(y3-y1)), ((x4-x2),(y4-y2))
+			v3,v4 = self.oldVectors
+			if cross(v1,v2) < 0:
+				if   cross(v1,v3) <= 0 and cross(v2,v4) >=0:
+					self.switch = 1
+					self.oldVectors = (-v1[0],-v1[1]),v2
+				elif cross(v1,v3) >= 0 and cross(v2,v4) <=0:
+					## This almost never happens. 
+					self.switch = 2
+					self.oldVectors = v1,(-v2[0],-v2[1])
+				else: 
+					## Somethings gone a bit wrong. 
+					self.update = 0 #self.switch = 1
+			else: 
+				self.switch = 0
+				if cross(v1,v3) <= 0 and cross(v2,v4) <=0:
+					if self.switch != 0: self.switch =  3
+					self.oldVectors = (-v1[0],-v1[1]),(-v2[0],-v2[1])
+				else:
+					self.oldVectors = v1,v2
 	
+
+		if   self.switch == 1:
+				x1,x3,y1,y3 = x3,x1,y3,y1
+		elif self.switch == 2:
+				x2,x4,y2,y4 = x4,x2,y4,y2
+		elif self.switch == 3:
+				x1,x3,y1,y3 = x3,x1,y3,y1
+				x2,x4,y2,y4 = x4,x2,y4,y2
+				self.switch = 0
+
+		
+		## if we've lost sight of one led totaly, then don't update
+		update &= (1023,1023) not in [(x1,x2),(x3,x4)]
+		#update &= (x1 != 1023  and x2 != 1023) or (x3 != 1023 and x4 != 1023)
+		if update:
+			self.tracker1.process([(x1,y1)],[(x2,y2)])	                
+			self.tracker2.process([(x3,y3)],[(x4,y4)])
+				
+			self.x1,self.y1,self.z1 = self.tracker1.getCoordinates()[0]
+			self.x2,self.y2,self.z2 = self.tracker2.getCoordinates()[0]
+			self.dx = self.x2 - self.x1
+			self.dy = self.y2 - self.y1	
+			self.dz = self.z2 - self.z1	
+
+
 
 
 def CoordinateTrackerFactory(n,correctErrors = False):
