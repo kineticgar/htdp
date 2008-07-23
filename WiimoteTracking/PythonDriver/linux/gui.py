@@ -1,5 +1,5 @@
 from Tkinter import *
-from final.WiimoteTalkers import *
+from final.Wiimote3dTracking import Wiimote3dTracker
 from final.Listeners import *
 import sys
 
@@ -27,12 +27,13 @@ class App:
 		self.strOfAdrs.set('No Wiimotes Found' )
 		self.availableWiimotes = Label(master,textvariable = self.strOfAdrs)
 		self.availableWiimotes.pack(side =BOTTOM)
+		self.tracker = None
 		
 	def search(self):
 		self.strOfAdrs.set("Searching for wiimotes")
-		self.talker  = Talker() 
-		if self.talker.getNumberOfWiimotes >0:
-			self.updatesetOfAdrs(self.talker.getWiimoteAddress())
+		self.tracker  = Wiimote3dTracker() 
+		if self.tracker.getNumberOfWiimotes >0:
+			self.updatesetOfAdrs(self.tracker.getWiimoteAddresses())
 			return True
 		self.strOfAdrs.set("No Wiimotes Found")
 		return False
@@ -40,22 +41,22 @@ class App:
 	def connect(self):
 		if len(self.setOfAdrs)>0 or self.search():
 		## search() returns true iff it found and wiimotes	
-			if self.talker.connect():
+			if self.tracker.connect():
 			## if we can still see hose wiimotes
 				self.connectButton.destroy()
 				self.disconnectButton = Button(self.frame, text = "Disconnect", fg = "red", command = self.disconnect)
 				self.disconnectButton.pack(side = LEFT)
 				
-				self.callibrateButton = Button(self.frame, text="Callibrate", command = self.talker.callibrate)
+				self.callibrateButton = Button(self.frame, text="Callibrate", command = self.tracker.callibrate)
 				self.callibrateButton.pack(side=LEFT)
 				
-				self.talker.register(self)
-				self.talker.register(Printer())
-				self.talker.start()	
+				self.tracker.register(self)
+				self.tracker.register(Printer())
+				self.tracker.start()	
 			
 		
 	def disconnect(self):
-		self.talker.disconnect()
+		self.tracker.disconnect()
 		self.disconnectButton.destroy()
 		self.callibrateButton.destroy()
 		self.connectButton = Button(self.frame, text="Connect", command = self.connect)

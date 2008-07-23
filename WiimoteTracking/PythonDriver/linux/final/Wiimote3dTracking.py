@@ -52,7 +52,14 @@ class Wiimote3dTracker(threading.Thread):
 		print "Found %i devices" % len(wiimotes)
 		#wiimotes = filter(lambda x: x[:8]=='00:19:FD', wiimotes)	
 		#for wm in wiimotes: print lookup_name(wm)
-		#wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
+		wiimotes.sort(reverse=True)
+		## Bit of a hack, the newer remotes have better bluetooth interfaces so will connect
+		## faster. They also seem to have bigger (in a lexographiclal order) mac addresses
+		## so  by doing this sort, we can look up to the faster ones first meaning there 
+		## is more chance that the final ones will still be in 'discoverable' mode when
+		## we get to them.
+		wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
+	
 		print "Found %i wiimotes" % len(wiimotes)
 		return wiimotes
 		
@@ -73,25 +80,26 @@ class Wiimote3dTracker(threading.Thread):
 		## sends them to whoever is listening via the refresh method.
 		## if any listener returns false, or the a button is pressed on a remote
 		## then we disconnect and quit. 
-		data  = [wm.getData() for wm in self.wiimotes]
-		xys1, xys2 = self.irParser.parseWiiData( data )
-		if xys1 and xys2:
-			self.coordinateTracker.process( xys1, xys2 )
-		pos1,pos2 = self.coordinateTracker.getCoordinates()
-		
-		if pos1 and pos2: ## IR parser may return None...
-			if self.useNormalisation:
-				pos1 = self._normalise(pos1)
-				pos2 = self._normalise(pos2)
-			result = True
-			for l in self.listeners:
-				result &= l.refresh(pos1,pos2)
-		## if one of the listeners wants us to exit, or if the A button is pressed
-		## on any remote, then exit.
-		if not result:# or self.irParser.checkButtonA(data): 
-			self.disconnect()
-			import sys
-			sys.exit()	
+		if all([wm.updated for wm in self.wiimotes]):
+			data  = [wm.getData() for wm in self.wiimotes]
+			xys1, xys2 = self.irParser.parseWiiData( data )
+			if xys1 and xys2:
+				self.coordinateTracker.process( xys1, xys2 )
+			pos1,pos2 = self.coordinateTracker.getCoordinates()
+			
+			if pos1 and pos2: ## IR parser may return None...
+				if self.useNormalisation:
+					pos1 = self._normalise(pos1)
+					pos2 = self._normalise(pos2)
+				result = True
+				for l in self.listeners:
+					result &= l.refresh(pos1,pos2)
+			## if one of the listeners wants us to exit, or if the A button is pressed
+			## on any remote, then exit.
+			if not result:# or self.irParser.checkButtonA(data): 
+				self.disconnect()
+				import sys
+				sys.exit()	
 
 
 	def callibrate(self,MAX=(800,600,1024),howLong = 5):
@@ -106,7 +114,7 @@ class Wiimote3dTracker(threading.Thread):
 			self.refresh()
 			(x1,y1,z1),(x2,y2,z2) = self.coordinateTracker.getCoordinates()
 			minxyzs = [min(minxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
-			maxxyzs = [max(minxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
+			maxxyzs = [max(maxxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
 		self.useNormalisation = True ## This is used in refresh()
 		self.minxyzs,self.maxxyzs = minxyzs,maxxyzs
 		self.scalings=[	MAX[0]/(1.+self.maxxyzs[0]-self.minxyzs[0]), ## +1 to avoiud zero div error

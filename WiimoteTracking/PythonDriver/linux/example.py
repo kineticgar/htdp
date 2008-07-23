@@ -17,7 +17,7 @@
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import sys,time
-from final.Wiimote3dTracking import Wiimote3dtracker
+from final.Wiimote3dTracking import Wiimote3dTracker
 address1 = '00:19:FD:ED:E1:25'  ## address of my wiimote
 address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
 ## These could be passed to tracker to connect to them specifically, but 
