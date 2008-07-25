@@ -56,7 +56,7 @@ class Wiimote3dTracker(threading.Thread):
 		print "Found %i devices" % len(addresses)
 		#wiimotes = filter(lambda x: x[:8]=='00:19:FD', wiimotes)	
 		#for wm in wiimotes: print lookup_name(wm)
-<<<<<<< .mine
+
 		addresses.sort(reverse = True)
 		threads = [WiimoteIdentifier(x) for x in addresses]
 		for t in threads: t.run()
@@ -67,17 +67,8 @@ class Wiimote3dTracker(threading.Thread):
 		for i in range(len(addresses)):
 			if threads[i].isWiimote:
 				wiimotes += [addresses[i]]
-			
-=======
-		wiimotes.sort(reverse=True)
-		## Bit of a hack, the newer remotes have better bluetooth interfaces so will connect
-		## faster. They also seem to have bigger (in a lexographiclal order) mac addresses
-		## so  by doing this sort, we can look up to the faster ones first meaning there 
-		## is more chance that the final ones will still be in 'discoverable' mode when
-		## we get to them.
-		wiimotes = filter(lambda x: lookup_name(x) == 'Nintendo RVL-CNT-01', wiimotes)
 	
->>>>>>> .r67
+
 		print "Found %i wiimotes" % len(wiimotes)
 		return wiimotes
 		
