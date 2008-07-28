@@ -32,7 +32,7 @@ class Wiimote3dTracker(threading.Thread):
 		self.adrs=addresses
 		if len(self.adrs) ==1 and type(self.adrs[0]) == list:
 			self.adrs = self.adrs[0]
-		if len(self.adrs) ==0 : self.adrs = self.search()
+		if len(self.adrs) ==0 : self.adrs = Wiimote3dTracker.search()
 		
 		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
 		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes))
@@ -42,21 +42,23 @@ class Wiimote3dTracker(threading.Thread):
 		## set up the stuff needed for threading:
 		threading.Thread.__init__ (self)
 		
-	def connect(self):
+	def connect(self, listOfAddresses = None):
 		## Tries to connect to each address and returns true if everything went ok.
+		## listOfAddresses is an optional list of addresses to connect to
 		print "Connecting to wiimotes..."
+		if listOfAddresses:
+			self.wiimotes= [Wiimote(adr) for adr in listOfAddresses]
+
+		
+
 		return 	not False in [ wm.connect() for wm in self.wiimotes]
 		
 	def search(self):
-		
 		print "Searching for wiimotes..."
 		addresses = discover_devices(0)
-		## We need to remove any non- wiimotes. it is possible some wiimotes
-		## do not pass this check however. 
+		
 		print "Found %i devices" % len(addresses)
-		#wiimotes = filter(lambda x: x[:8]=='00:19:FD', wiimotes)	
-		#for wm in wiimotes: print lookup_name(wm)
-
+		## We need to remove any non- wiimotes. 
 		addresses.sort(reverse = True)
 		threads = [WiimoteIdentifier(x) for x in addresses]
 		for t in threads: t.run()
@@ -68,9 +70,9 @@ class Wiimote3dTracker(threading.Thread):
 			if threads[i].isWiimote:
 				wiimotes += [addresses[i]]
 	
-
 		print "Found %i wiimotes" % len(wiimotes)
 		return wiimotes
+	search = classmethod(search)
 		
 	def disconnect(self):
 		# Disconnects from all wiimotes.
@@ -131,7 +133,7 @@ class Wiimote3dTracker(threading.Thread):
 		self.scale=max(MAX[0]/(1.+maxxyzs[0]-minxyzs[0]), ## +1 to avoiud zero div error
 							MAX[1]/(1.+maxxyzs[1]-minxyzs[1]), ## and turn the expression into float.
 							MAX[2]/(1.+maxxyzs[2]-minxyzs[2])) ## min <= max  so adding one is sufficient
-		print "Callibration done."
+		print "Callibration done.",self.scale
 		
 	def _normalise(self,(x,y,z),returnAsInt= True):
 		## scales the cooridinate to inside the limits set by callibrate.

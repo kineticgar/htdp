@@ -120,6 +120,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		if d !=0: ## once things get going, this is almost certain to pass, but it will fail initially
 			self.z1 = self.scalingForZ/d
 			self.z2 = self.z1
+
 			if not factor:factor = self.distanceBetweenIRLEDsInmm/d
 			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx,factor,shiftx)
 			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy,factor,shifty)
@@ -154,14 +155,15 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		
 		if 1023 not in (x1,x2,x3,x4):
 			## this is a way of telling if we have the two dots mixed
-			## up from one remote. This shouldn't happen because of the 
-			## swapper code above, though it may occasionly happen due
-			## to rapid movement. It uses the dot product to tell if 
+			## up from one remote. It uses the dot product to tell if 
 			## the vectors  (x1,y1)->(x3,y3) and (x2,y2)->(x4,y4) 
 			## point in the same direction			
 			v1,v2 = ((x3-x1),(y3-y1)), ((x4-x2),(y4-y2))
 			v3,v4 = self.oldVectors
 			if cross(v1,v2) < 0:
+				## The cross product of two vectors in R2 is negative
+				## iff the angle between them is greater than pi/2
+				## or less than -pi/2
 				if   cross(v1,v3) <= 0 and cross(v2,v4) >=0:
 					self.switch = 1
 					self.oldVectors = (-v1[0],-v1[1]),v2
@@ -171,7 +173,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 					self.oldVectors = v1,(-v2[0],-v2[1])
 				else: 
 					## Somethings gone a bit wrong. 
-					self.update = 0 #self.switch = 1
+					self.update = 0
 			else: 
 				self.switch = 0
 				if cross(v1,v3) <= 0 and cross(v2,v4) <=0:
@@ -207,7 +209,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 
 
 
-def CoordinateTrackerFactory(n,correctErrors = False):
+def CoordinateTrackerFactory(n,correctErrors = True):
 	if n <= 0: 
 		print "Cannot parse data of zero length!"
 		return SingleIRRawCoordinates()

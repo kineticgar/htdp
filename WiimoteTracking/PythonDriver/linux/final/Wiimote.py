@@ -39,7 +39,10 @@ class Wiimote(threading.Thread):
 		    
 	def getData(self):
 		## self.data is kept current by __getData looping constantly
-		return self.data
+		if self.updated:
+			self.updated = False
+			return self.data
+		else: return None
 		    
 	def disconnect(self):
 		self.r = 0
@@ -54,7 +57,7 @@ class Wiimote(threading.Thread):
 			
 	def __getData(self):
 			self.data =  self.receiveSocket.recv(19)
-			
+			self.updated = True
 	def connect(self):
 		""" Connects to the wiimote at address and enable IR
 			for much more information and clarity, see
