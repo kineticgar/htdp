@@ -1,7 +1,10 @@
+import sys
+
+sys.path.append(".")
+
 from Tkinter import *
 from final.Wiimote3dTracking import Wiimote3dTracker
 from final.Listeners import *
-import sys
 
 
 class App:
