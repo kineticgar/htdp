@@ -32,20 +32,19 @@ class Socket:
 	##	talker.register( Socket( port = 5035) 
 	## etc..
 	def __init__(self,host = "",port=4440):
+		## will raise a socket error if the port isn't available
 		import sys, socket
 		self.data = None
-		try:
-			self.mySocket = socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
-			self.mySocket.connect ( ( '', port ) )
-			self.refresh = self._refresh
-		except socket.error:
-			print "Socket.error: 111, Connection Refused"
-	def refresh(*args): return True			
-	def _refresh(self,(x1,y1,z1),(x2,y2,z2)):
-				if (x1,y1,z1,x2,y2,z2)!= self.data:
-					self.mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1\n" % (x1,y1,z1,x2,y2,z2)) ###
-					self.data = (x1,y1,z1,x2,y2,z2)
-   				return True		
+		self.mySocket = socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
+		self.mySocket.connect ( ( host, port ) )
+			
+			
+	def refresh(self,(x1,y1,z1),(x2,y2,z2)):
+		if (x1,y1,z1,x2,y2,z2)!= self.data:
+			self.mySocket.send("x:%i,y:%i,z:%i,X:%i,Y:%i,Z:%i:1\n" % (x1,y1,z1,x2,y2,z2))
+			self.data = (x1,y1,z1,x2,y2,z2)
+			return True		
+			
 class Printer:
 	## This is an example of a listener. Its refresh method simply prints the data
 	## if it has changed, and returns True to indicate success.
