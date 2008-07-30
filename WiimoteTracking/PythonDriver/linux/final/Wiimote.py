@@ -18,17 +18,17 @@
 
 import threading
 import time	
-from bluetooth import set_packet_timeout, BluetoothSocket,L2CAP
 
 class Wiimote(threading.Thread):
 
 	def __init__(self,address):     
+		from BluetoothSupport import newSocket
 		self.address = address
 		## Create two bluetooth sockets: 
 		##              One to receive data,
 		##              One to send config data
-		self.receiveSocket = BluetoothSocket( L2CAP )
-		self.sendSocket = BluetoothSocket( L2CAP )
+		self.receiveSocket = newSocket()
+		self.sendSocket = newSocket()
 		self.data = None
               
 	def send(self, *data ):
@@ -56,8 +56,9 @@ class Wiimote(threading.Thread):
 			self.__getData()
 			
 	def __getData(self):
-			self.data =  self.receiveSocket.recv(19)
+			self.data =  self.receiveSocket.receive(19)
 			self.updated = True
+			
 	def connect(self):
 		""" Connects to the wiimote at address and enable IR
 			for much more information and clarity, see
@@ -66,8 +67,8 @@ class Wiimote(threading.Thread):
 		print "Trying to connect to %s" % self.address
 		## Port 19 is where the data will be found
 		## Port 17 is the one we want to send our data on.
-		self.receiveSocket.connect( ( self.address, 19 ) )
-		self.sendSocket.connect( ( self.address, 17 ) )
+		self.receiveSocket.connect( self.address, 19 )
+		self.sendSocket.connect( self.address, 17 )
 
 		## So now we're connected!
 		## The Data Reporting Mode is set by sending a two-byte command to Report 0x12: 
@@ -102,6 +103,16 @@ class Wiimote(threading.Thread):
 		
 		self.start() 
 		print "Connected to %s" % self.address
+		self.vibrate()
 		return 1
 
-
+	def vibrate(self, duration = 1):
+		"""Vibrates the wiimote for 'duration' number of seconds"""
+		t0 = time.time()
+		## The 0x01 sets vibrate on any output register. 0x15 is 
+		## a register we can write to safely without changing anything
+		## importtant, its a request for status info. 
+		self.send(0x52,0x15,0x01)
+		time.sleep(duration)
+		self.send(0x52,0x15,0x00)
+		
