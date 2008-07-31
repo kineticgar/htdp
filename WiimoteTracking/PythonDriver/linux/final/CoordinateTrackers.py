@@ -76,15 +76,25 @@ class CoordinateTracker:
 				self.y1 + self.dy,
 				self.z1 + self.dz)
 		
-	def correct(self,v1,v2,old1,old2,dv,factor,shift =0):
-			if v1==1023 and v2 == 1023:
-				return old1,old2,dv
-			elif v2 == 1023:
-				return (v1-shift)*factor ,(v1-shift)*factor  + dv, dv
-			elif v1 == 1023:
-				return (v2-shift)*factor - dv,(v2-shift)*factor ,dv
-			else:
-				return (v1-shift)*factor , (v2-shift)*factor,  (v2-shift)*factor - (v1-shift)*factor
+	def correct(self,v1,v2,old1,old2,dv):
+		"""Applies correction to two variablen in one dimension.
+			based on thier last known position and weather they are 
+			visible now. 
+		"""
+		## This is currently binary filtering, but could be extended 
+		## to something like alpha-beta filtering. 
+		if v1==1023 and v2 == 1023:
+			## If neither point is visible, return thier last known position
+			return old1,old2,dv
+		## If only one point is visible, assume the difference between 
+		## them stays constant
+		elif v2 == 1023:
+			return v1,v1  + dv, dv
+		elif v1 == 1023:
+			return v2- dv,v2 ,dv
+		## if we can see both, use both. 
+		else:
+			return v1, v2,  v2 - v1
 
 
 	def process(*args):
@@ -104,7 +114,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 	distanceBetweenIRLEDsInmm = 152.
 	scalingForZ = 1024*distanceBetweenIRLEDsInmm/(2*tan(pi/8))
 	
-	def  process(self, xys1,xys2,factor = None,shiftx = 512,shifty = 384 ):
+	def  process(self, xys1,xys2):
 		## Check its being used as a single parser...
 		assert len(xys1) == 1 == len(xys2)
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
@@ -120,10 +130,8 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		if d !=0: ## once things get going, this is almost certain to pass, but it will fail initially
 			self.z1 = self.scalingForZ/d
 			self.z2 = self.z1
-
-			if not factor:factor = self.distanceBetweenIRLEDsInmm/d
-			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx,factor,shiftx)
-			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy,factor,shifty)
+			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx)
+			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy)
 
 
 	
