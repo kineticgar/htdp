@@ -19,14 +19,16 @@ def newSocket():
 		from os import name
 		if name == "posix":
 			return __LinuxL2CAPSocket()
-		if name == "windows": #??? not sure what the name is
+		if name == "nt" or name =="ce": 
 			return __WindowsL2CAPSocket()
-		if name == "mac": #??? not sure what the name is
+		if name == "mac": 
 			return __MacL2CAPSocket()
-		else:
-			## Lets try linux...
-			Warning("Operating system not recognised")
-			return __LinuxL2CAPSocket()
+		## Other names: dos, os2, java, riscos
+		## os.uname()[0] is another option but I think this will do.  
+		
+		## No support for OS, but lets try linux...
+		Warning("Operating system not supported")
+		return __LinuxL2CAPSocket()
 		
 		
 class __LinuxL2CAPSocket:
