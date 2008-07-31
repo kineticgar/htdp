@@ -113,12 +113,13 @@ class Wiimote3dTracker(threading.Thread):
 				sys.exit()	
 
 
-	def callibrate(self,MAX=(800,600,1024),howLong = 5):
-		## Use this to callibrate the output of the coordinate trackers
+	def calibrate(self,MAX=(800,600,1024),howLong = 5):
+		## Use this to calibrate the output of the coordinate trackers
 		## it loops round, recordng the range of values sent by the 
 		## coordinateTracker. 
-		## So when this is being called, the IR dots should be waved about a bit. 
-		print "Starting callibration..."
+		## So when this is being called, the IR dots should be waved about
+		## as much as possible (to the edges of the wiimotes field of view). 
+		print "Starting calibration..."
 		startTime = time.time()
 		minxyzs,maxxyzs = [2*31]*3,[-2**31]*3##+- inf...not nice but it will do. 
 		while time.time() -startTime < howLong:
@@ -127,23 +128,32 @@ class Wiimote3dTracker(threading.Thread):
 			minxyzs = [min(minxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
 			maxxyzs = [max(maxxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
 		self.useNormalisation = True ## This is used in refresh()
+		
+		## Check for div b zero errors and calculate the re-scaling
+		self.minxyzs,self.maxxyzs = minxyzs,maxxyzs
+		if maxxyzs[0]-minxyzs[0] != 0: 
+			s0 = MAX[0]/(float(maxxyzs[0]-minxyzs[0]))
+		else: s0 = 1
+		if maxxyzs[1]-minxyzs[1] != 0: 
+			s1 = MAX[1]/(float(maxxyzs[1]-minxyzs[1]))
+		else: s1 = 1
+		if maxxyzs[2]-minxyzs[2] != 0: 
+			s2 = MAX[2]/(float(maxxyzs[2]-minxyzs[2]))
+		else: s2 = 1
 		## Scalings should be the same in each direction to avoid distortion
 		## so lets use the maximum 
-		self.minxyzs,self.maxxyzs = minxyzs,maxxyzs
-		self.scale=max(MAX[0]/(1.+maxxyzs[0]-minxyzs[0]), ## +1 to avoiud zero div error
-							MAX[1]/(1.+maxxyzs[1]-minxyzs[1]), ## and turn the expression into float.
-							MAX[2]/(1.+maxxyzs[2]-minxyzs[2])) ## min <= max  so adding one is sufficient
-		print "Callibration done.",self.scale
+		self.scale=max(s0,s1,s2) 
+		print "calibration done.",self.scale
 		
 	def _normalise(self,(x,y,z),returnAsInt= True):
-		## scales the cooridinate to inside the limits set by callibrate.
-		## Should only be called after callibrate has been called. 
+		## scales the cooridinate to inside the limits set by calibrate.
+		## Should only be called after calibrate has been called. 
 		x -= self.minxyzs[0]
 		y -= self.minxyzs[1]
 		z -= self.minxyzs[2]
-		x *= self.scale
-		y *= self.scale	
-		z *= self.scale
+		x *= 0.8*self.scale
+		y *= 0.8*self.scale	
+		z *= 0.8*self.scale
 		if returnAsInt:
 			return map(int,[x,y,z])
 		return x,y,z
@@ -158,6 +168,12 @@ class Wiimote3dTracker(threading.Thread):
 		
 	def getWiimoteAddresses(self):
 		return self.adrs
+		
+	def vibrate(self,address,duration = 1):
+		"""Vibrates the specified wiimote for 'duration' seconds"""
+		if not address in self.adrs: return
+		i = self.adrs.index(address)
+		self.wiimotes[i].vibrate(duration)
 		
 class WiimoteIdentifier(threading.Thread):
 	def __init__(self,address):

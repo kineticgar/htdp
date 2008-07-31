@@ -19,9 +19,14 @@ class App:
 		self.listOfAdrsButton.pack(side = TOP)
 		
 
+			
+		
+		## A button to identify the wiimotes selected in the listbox
+		self.vibrateButton = Button(frame, text = "Identify selected wiimote(s)", command = self.vibrate)
+		self.vibrateButton.pack(side=BOTTOM)
 		## A button to search for wiimotes
 		self.searchButton = Button(frame, text="Search", command = self.search)
-		self.searchButton.pack(side=LEFT)		
+		self.searchButton.pack(side=LEFT)	
 		
 		## A button to connect to wiimotes
 		self.connectButton = Button(frame, text="Connect", command = self.connect)
@@ -55,8 +60,8 @@ class App:
 			self.disconnectButton = Button(self.frame, text = "Disconnect", fg = "red", command = self.disconnect)
 			self.disconnectButton.pack(side = LEFT)
 			
-			self.callibrateButton = Button(self.frame, text="Callibrate", command = self.tracker.callibrate)
-			self.callibrateButton.pack(side=LEFT)
+			self.calibrateButton = Button(self.frame, text="calibrate", command = self.tracker.calibrate)
+			self.calibrateButton.pack(side=LEFT)
 			
 			self.tracker.register(self)
 			self.tracker.register(Printer())
@@ -66,7 +71,7 @@ class App:
 	def disconnect(self):
 		self.tracker.disconnect()
 		self.disconnectButton.destroy()
-		self.callibrateButton.destroy()
+		self.calibrateButton.destroy()
 		self.connectButton = Button(self.frame, text="Connect", command = self.connect)
 		self.connectButton.pack(side=LEFT)
 		
@@ -84,6 +89,12 @@ class App:
 		self.canvas.coords(self.dot1, x1,y1,x1+3,y1+3)		
 		self.canvas.coords(self.dot2, x2,y2,x2+3,y2+3)
 		return True
+		
+	def vibrate(self,duration = 1):
+		selectedAddresses = [self.listOfAdrs[int(i)] for i in self.listOfAdrsButton.curselection()]
+		for adr in selectedAddresses:
+			self.tracker.vibrate(adr,duration)
+			
 if __name__ == "__main__":
 	root = Tk()
 	app = App(root)
