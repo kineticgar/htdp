@@ -45,11 +45,7 @@ CoordinateTracker:
 	
 """
 import time
-import math
-pi = math.pi
-cos = math.cos
-sin = math.sin
-tan = math.tan
+from math import sin,cos,tan,pi,sqrt
 def cross(v1,v2):
 	return v1[0]*v2[0] + v1[1]*v2[1]
 
@@ -70,35 +66,24 @@ class CoordinateTracker:
 
 	def length(self):
 		return math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
+	
 	def getCoordinates(self):
 		return (self.x1,self.y1,self.z1), (
 				self.x1 + self.dx,
 				self.y1 + self.dy,
 				self.z1 + self.dz)
+	def getCenter(self):
+		return (self.x1+self.x2)/2, (self.y1+self.y2)/2,(self.z1+self.z2)/2
+
+	def getAngleFromCenter(self):
+		s = sqrt(self.dx**2 + self.dy**2)
+		if s == 0: 
+			if z>0:return pi/2
+			return pi/2
+		return math.atan(self.dz/s)
 		
-	def correct(self,v1,v2,old1,old2,dv):
-		"""Applies correction to two variablen in one dimension.
-			based on thier last known position and weather they are 
-			visible now. 
-		"""
-		## This is currently binary filtering, but could be extended 
-		## to something like alpha-beta filtering. 
-		if v1==1023 and v2 == 1023:
-			## If neither point is visible, return thier last known position
-			return old1,old2,dv
-		## If only one point is visible, assume the difference between 
-		## them stays constant
-		elif v2 == 1023:
-			return v1,v1  + dv, dv
-		elif v1 == 1023:
-			return v2- dv,v2 ,dv
-		## if we can see both, use both. 
-		else:
-			return v1, v2,  v2 - v1
-
-
 	def process(*args):
-		raise "Usage Error: CoordinateTracker must be subclassed to use process"	
+		raise Error("Usage Error: CoordinateTracker must be subclassed to use process")
 
 class SingleIRRawCoordinates( CoordinateTracker ):
 	##this class will just return the coordinate data form the wiimote
@@ -111,31 +96,46 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 			
 			
 class SingleCoordinateTracker( CoordinateTracker ):	
-	distanceBetweenIRLEDsInmm = 152.
-	scalingForZ = 1024*distanceBetweenIRLEDsInmm/(2*tan(pi/8))
-	
-	def  process(self, xys1,xys2):
-		## Check its being used as a single parser...
-		assert len(xys1) == 1 == len(xys2)
+	distBetweenDots = 150
+	radiansPerPixel = (pi / 4) / 1024.0
+	def  process(self, xys1,xys2 ):
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
 		## If one dot goes off-screen, then we use the visible dot and the last known difference 
 		## between them. 
 		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
 		if 1023 in(x1,x2) and self.z1!=0:
-			d = self.scalingForZ/self.z1
-			## if we cant see both points, assume distance is constant. 
-		else:
-			d = math.sqrt((x2-x1)**2+(y2-y1)**2) ## 
-		if d !=0: ## once things get going, this is almost certain to pass, but it will fail initially
-			self.z1 = self.scalingForZ/d
-			self.z2 = self.z1
-			self.x1,self.x2,self.dx = self.correct(x1,x2,self.x1,self.x2,self.dx)
-			self.y1,self.y2,self.dy = self.correct(y1,y2,self.y1,self.y2,self.dy)
+			return
 
-
-	
-
+		thetaX1 = (x1-512)*self.radiansPerPixel
+		thetaX2 = (x2-512)*self.radiansPerPixel 
+		thetaY1 = (y1-384)*self.radiansPerPixel 
+		thetaY2 = (y2-384)*self.radiansPerPixel 
+		
+		tanThetaX1 = tan(thetaX1)
+		tanThetaX2 = tan(thetaX2)
+		tanThetaY1 = tan(thetaY1)
+		tanThetaY2 = tan(thetaY2)
+		
+		zBYdx = tanThetaX1 - tanThetaX2
+		zBYdy = tanThetaY1 - tanThetaY2
+		if zBYdx == 0: return
+		if zBYdy == 0: return
+		
+		
+		
+		z = sqrt((self.distBetweenDots**2) /(zBYdx**2+zBYdy**2) )
+		if z ==0: return
+		self.x1 = tanThetaX1*z
+		x2 = tanThetaX2*z
+		self.y1 = tanThetaY1*z
+		y2 = tanThetaY2*z
+		
+		self.dx = x2 - self.x1	
+		self.dy = y2 - self.y1
+		self.z1 = z
+		self.dz = 0
+		
 class DoubleCoordinateTracker( CoordinateTracker ):	
 	old =0,0
 	oldVectors = (0,0),(0,0)
@@ -217,15 +217,15 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 
 
 
-def CoordinateTrackerFactory(n,correctErrors = True):
+def CoordinateTrackerFactory(n,raw = False):
 	if n <= 0: 
 		print "Cannot parse data of zero length!"
 		return SingleIRRawCoordinates()
 	if n == 1: 
-		if correctErrors:
-			return SingleCoordinateTracker()
-		else:
+		if raw:
 			return SingleIRRawCoordinates()
+		else:
+			return SingleCoordinateTracker()
 	if n == 2: 
 		return DoubleCoordinateTracker()
 	if n > 2:

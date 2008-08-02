@@ -24,7 +24,7 @@ import time
 
 class Wiimote3dTracker(threading.Thread):
 	useNormalisation = False
-	def __init__(self,*addresses):
+	def __init__(self,*addresses,**raw ):
 		## Accepts an arbitrary number of wiimote addresses as an argument
 		## Currently, any remotes past the first two are ignored, as the IR
 		## parser doesn't know what to do with them. Niether do I actually...
@@ -35,7 +35,7 @@ class Wiimote3dTracker(threading.Thread):
 		if len(self.adrs) ==0 : self.adrs = Wiimote3dTracker.search()
 		
 		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
-		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes))
+		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes),raw = raw)
 		self.irParser = IRparser()
 		self.listeners = []
 		
@@ -48,9 +48,6 @@ class Wiimote3dTracker(threading.Thread):
 		print "Connecting to wiimotes..."
 		if listOfAddresses:
 			self.wiimotes= [Wiimote(adr) for adr in listOfAddresses]
-
-		
-
 		return 	not False in [ wm.connect() for wm in self.wiimotes]
 		
 	def search(self):
@@ -151,9 +148,9 @@ class Wiimote3dTracker(threading.Thread):
 		x -= self.minxyzs[0]
 		y -= self.minxyzs[1]
 		z -= self.minxyzs[2]
-		x *= 0.8*self.scale
-		y *= 0.8*self.scale	
-		z *= 0.8*self.scale
+		x *= self.scale
+		y *= self.scale	
+		z *= self.scale
 		if returnAsInt:
 			return map(int,[x,y,z])
 		return x,y,z
@@ -183,7 +180,7 @@ class WiimoteIdentifier(threading.Thread):
 		threading.Thread.__init__ (self) 
 		
 	def run(self):
-		print "Runnin thread for addr %s" % self.address
+		print "Running thread for addr %s" % self.address
 		name = lookup_name(self.address)
 		self.isWiimote = ( name == 'Nintendo RVL-CNT-01') 
 		print "addr %s --> %s: %s" %(self.address,self.isWiimote,name)

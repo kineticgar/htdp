@@ -103,7 +103,6 @@ class Wiimote(threading.Thread):
 		
 		self.start() 
 		print "Connected to %s" % self.address
-		self.vibrate()
 		return 1
 
 	def vibrate(self, duration = 1):
