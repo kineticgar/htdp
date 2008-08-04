@@ -50,7 +50,7 @@ def cross(v1,v2):
 	return v1[0]*v2[0] + v1[1]*v2[1]
 
 class CoordinateTracker:
-
+	radiansPerPixel = (pi / 4) / 1024.0
 	def __init__(self):
 		## We use a dictionary to store values
 		self.x1  = 0
@@ -97,7 +97,6 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 			
 class SingleCoordinateTracker( CoordinateTracker ):	
 	distBetweenDots = 150
-	radiansPerPixel = (pi / 4) / 1024.0
 	def  process(self, xys1,xys2 ):
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
@@ -119,8 +118,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		
 		zBYdx = tanThetaX1 - tanThetaX2
 		zBYdy = tanThetaY1 - tanThetaY2
-		if zBYdx == 0: return
-		if zBYdy == 0: return
+		if zBYdx == 0 and zBYdy == 0: return
 		
 		
 		
@@ -136,24 +134,39 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		self.z1 = z
 		self.dz = 0
 		
+
 class DoubleCoordinateTracker( CoordinateTracker ):	
 	old =0,0
 	oldVectors = (0,0),(0,0)
-	tracker1 = SingleCoordinateTracker()
-	tracker2 = SingleCoordinateTracker()
+	distanceBetweenWiimotes = 37
 	switch = 0
 	visible = 15
+	def convertTo3d(self,xA,xB,yA,yB):
+			"""See documentation for an explanation of the maths here"""
+			thetaAx = (xA-512)*self.radiansPerPixel
+			thetaBx = (xB-512)*self.radiansPerPixel
+			thetaAy = (yA-384)*self.radiansPerPixel
+			thetaBy = (yB-384)*self.radiansPerPixel
+					
+			t = tan(thetaAx) - tan(thetaBx) 
+			if t!= 0:
+				z = self.distanceBetweenWiimotes / t
+				x = z * tan(thetaAx) - self.distanceBetweenWiimotes/2
+				y = z * (tan(thetaAy) + tan(thetaBy)) /2
+				return x,y,z
+			return 0,0,0
+	
 	def process(self, xys1,xys2 ):
 	
-		x1,x2,= xys1[0][0],xys1[1][0] ## the first x coordinate from each remote
-		x3,x4 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
-		y1,y2,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
-		y3,y4 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
+		xA1,xB1,= xys1[0][0],xys1[1][0] ## the first x coordinate from each remote
+		xA2,xB2 = xys2[0][0],xys2[1][0] ## the second x coordinate from each remote
+		yA1,yB1,= xys1[0][1],xys1[1][1] ## the first y coordinate from each remote
+		yA2,yB2 = xys2[0][1],xys2[1][1] ## the second y coordinate from each remote
 
 		## update tells us if we have enough info to update the coordinates
 		update  = True
 		## visible is a bitmask of the points that are visible
-		visible = reduce((lambda x,y: (x << 1) + (y!=1023)),(x1,x2,x3,x4),0)
+		visible = reduce((lambda x,y: (x << 1) + (y!=1023)),(xA1,xB1,xA2,xB2),0)
 		if visible == 15: self.visible = 15 ## we can see everythong
 		else: self.visible &=visible ## take away the points we can't see
 		update &= self.visible not in (0,1,2,4,8) ##If we've lost sight of three
@@ -161,12 +174,12 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		
 
 		
-		if 1023 not in (x1,x2,x3,x4):
+		if 1023 not in (xA1,xB1,xA2,xB2):
 			## this is a way of telling if we have the two dots mixed
 			## up from one remote. It uses the dot product to tell if 
-			## the vectors  (x1,y1)->(x3,y3) and (x2,y2)->(x4,y4) 
+			## the vectors  (xA1,yA1)->(xA2,yA2) and (xB1,yB1)->(xB2,yB2) 
 			## point in the same direction			
-			v1,v2 = ((x3-x1),(y3-y1)), ((x4-x2),(y4-y2))
+			v1,v2 = ((xA2-xA1),(yA2-yA1)), ((xB2-xB1),(yB2-yB1))
 			v3,v4 = self.oldVectors
 			if cross(v1,v2) < 0:
 				## The cross product of two vectors in R2 is negative
@@ -190,32 +203,30 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 				else:
 					self.oldVectors = v1,v2
 	
-
+		else: update = 0
 		if   self.switch == 1:
-				x1,x3,y1,y3 = x3,x1,y3,y1
+				xA1,xA2,yA1,yA2 = xA2,xA1,yA2,yA1
 		elif self.switch == 2:
-				x2,x4,y2,y4 = x4,x2,y4,y2
+				xB1,xB2,yB1,yB2 = xB2,xB1,yB2,yB1
 		elif self.switch == 3:
-				x1,x3,y1,y3 = x3,x1,y3,y1
-				x2,x4,y2,y4 = x4,x2,y4,y2
+				xA1,xA2,yA1,yA2 = xA2,xA1,yA2,yA1
+				xB1,xB2,yB1,yB2 = xB2,xB1,yB2,yB1
 				self.switch = 0
 
 		
 		## if we've lost sight of one led totaly, then don't update
-		update &= (1023,1023) not in [(x1,x2),(x3,x4)]
-		#update &= (x1 != 1023  and x2 != 1023) or (x3 != 1023 and x4 != 1023)
-		if update:
-			self.tracker1.process([(x1,y1)],[(x2,y2)])	                
-			self.tracker2.process([(x3,y3)],[(x4,y4)])
+		#update &= (1023,1023) not in [(xA1,xB1),(xA2,xB2)]
+		#update &= (xA1 != 1023  and xB1 != 1023) or (xA2 != 1023 and xB2 != 1023)
+		
 				
-			self.x1,self.y1,self.z1 = self.tracker1.getCoordinates()[0]
-			self.x2,self.y2,self.z2 = self.tracker2.getCoordinates()[0]
-			self.dx = self.x2 - self.x1
-			self.dy = self.y2 - self.y1	
-			self.dz = self.z2 - self.z1	
-
-
-
+		if update and 1023 not in (xA1,xB1):
+			self.x1,self.y1,self.z1 = self.convertTo3d(xA1,xB1,yA1,yB1)
+		if update and 1023 not in (xA2,xB2):
+			self.x2,self.y2,self.z2 = self.convertTo3d(xA2,xB2,yA2,yB2)
+			
+		self.dx = self.x2 - self.x1
+		self.dy = self.y2 - self.y1
+		self.dz = self.z2 - self.z1
 
 def CoordinateTrackerFactory(n,raw = False):
 	if n <= 0: 
