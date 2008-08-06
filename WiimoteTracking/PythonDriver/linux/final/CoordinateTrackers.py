@@ -45,7 +45,7 @@ CoordinateTracker:
 	
 """
 import time
-from math import sin,cos,tan,pi,sqrt
+from math import sin,cos,tan,atan,pi,sqrt
 def cross(v1,v2):
 	return v1[0]*v2[0] + v1[1]*v2[1]
 
@@ -64,23 +64,7 @@ class CoordinateTracker:
 		self.dz  = 0
 		self.buttonA = 0
 
-	def length(self):
-		return math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
 	
-	def getCoordinates(self):
-		return (self.x1,self.y1,self.z1), (
-				self.x1 + self.dx,
-				self.y1 + self.dy,
-				self.z1 + self.dz)
-	def getCenter(self):
-		return (self.x1+self.x2)/2, (self.y1+self.y2)/2,(self.z1+self.z2)/2
-
-	def getAngleFromCenter(self):
-		s = sqrt(self.dx**2 + self.dy**2)
-		if s == 0: 
-			if z>0:return pi/2
-			return pi/2
-		return math.atan(self.dz/s)
 		
 	def process(*args):
 		raise Error("Usage Error: CoordinateTracker must be subclassed to use process")
@@ -96,43 +80,69 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 			
 			
 class SingleCoordinateTracker( CoordinateTracker ):	
+
 	distBetweenDots = 150
+	def __init__(self):
+		self.tilt = 0
+		self.yaw =  0
+		self.thetaX = 0
+		self.thetaY = 0
+		self.z = 0
+	def length(self):
+		return self.distBetweenDots	
+		
+	def getMidpointinCartesian(self):
+		cx,sx = cos(self.thetaX), sin(self.thetaX)
+		cy,sy = cos(self.thetaY), sin(self.thetaY)
+		z = self.z
+		return z*sx*cy, z*cx*sy, z*cx*cy
+		
+		
+	def getYaw(self):
+		 return self.yaw
+	def getTilt(self):
+		return self.tilt
+		
+	def getHorizontalAngleToMidpoint(self):
+		return self.thetaX
+	
+	def getVertiacalAngleToMidpoint(self):
+		return self.thetaY
+	
+	def getDistanceToMidpoint(self):
+		return self.z
+		
+	def getListOfCartesianCoordinates(self):
+		cx,sx = cos(self.thetaX), sin(self.thetaX)
+		cy,sy = cos(self.thetaY), sin(self.thetaY)
+		z = self.z
+		midX,midY,midZ = z*sx*cy, z*cx*sy, z*cx*cy
+		l = self.distBetweenDots/2
+		dx = l*cos(self.tilt)*cos(self.yaw)
+		dy = l*sin(self.tilt)
+		dz = l*cos(self.tilt)*sin(self.yaw)
+		
+		return (midX + dx, midY + dy, midZ + dz),(midX - dx, midY - dy, midZ - dz)
+		
 	def  process(self, xys1,xys2 ):
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
-		## the default datum is 1023; this is what is sent if no dots are visible to the wiimote.
-		## If one dot goes off-screen, then we use the visible dot and the last known difference 
-		## between them. 
-		## x1 = 1023 <=> y1 = 1023 and similarly with x2,y2
-		if 1023 in(x1,x2) and self.z1!=0:
-			return
 
-		thetaX1 = (x1-512)*self.radiansPerPixel
-		thetaX2 = (x2-512)*self.radiansPerPixel 
-		thetaY1 = (y1-384)*self.radiansPerPixel 
-		thetaY2 = (y2-384)*self.radiansPerPixel 
+		if 1023 in(x1,x2):
+			return
 		
-		tanThetaX1 = tan(thetaX1)
-		tanThetaX2 = tan(thetaX2)
-		tanThetaY1 = tan(thetaY1)
-		tanThetaY2 = tan(thetaY2)
+		dx = (x2-x1)*self.radiansPerPixel
+		dy = (y2-y1)*self.radiansPerPixel
+		tanX = tan(dx)
+		tanY = tan(dy)
 		
-		zBYdx = tanThetaX1 - tanThetaX2
-		zBYdy = tanThetaY1 - tanThetaY2
-		if zBYdx == 0 and zBYdy == 0: return
-		
-		
-		
-		z = sqrt((self.distBetweenDots**2) /(zBYdx**2+zBYdy**2) )
-		if z ==0: return
-		self.x1 = tanThetaX1*z
-		x2 = tanThetaX2*z
-		self.y1 = tanThetaY1*z
-		y2 = tanThetaY2*z
-		
-		self.dx = x2 - self.x1	
-		self.dy = y2 - self.y1
-		self.z1 = z
-		self.dz = 0
+		if dx == 0 and dy == 0: return
+		z = self.distBetweenDots/2/sqrt(tanX * tanX + tanY * tanY)
+		self.z = z
+		self.thetaX = (1024 -x1-x2)*self.radiansPerPixel/2
+		self.thetaY = (768 - y1-y2)*self.radiansPerPixel/2
+
+		self.yaw = self.thetaX
+		if dx != 0:	self.tilt = atan(dy/dx) 
 		
 
 class DoubleCoordinateTracker( CoordinateTracker ):	
@@ -141,6 +151,24 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 	distanceBetweenWiimotes = 37
 	switch = 0
 	visible = 15
+	def length(self):
+		return math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
+	
+	def getListOfCartesianCoordinates(self):
+		return (self.x1,self.y1,self.z1), (
+				self.x1 + self.dx,
+				self.y1 + self.dy,
+				self.z1 + self.dz)
+	def getMidpoint(self):
+		return (self.x1+self.x2)/2, (self.y1+self.y2)/2,(self.z1+self.z2)/2
+
+	def getAngleFromCenter(self):
+		s = sqrt(self.dx**2 + self.dy**2)
+		if s == 0: 
+			if z>0:return pi/2
+			return pi/2
+		return math.atan(self.dz/s)
+	
 	def convertTo3d(self,xA,xB,yA,yB):
 			"""See documentation for an explanation of the maths here"""
 			thetaAx = (xA-512)*self.radiansPerPixel
