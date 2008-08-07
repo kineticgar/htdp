@@ -22,12 +22,12 @@ class ButtonParser:
 import sys,time
 sys.path.append('.')
 
-from final.WiimoteTalkers import *
+from final.Wiimote3dTracking import Wiimote3dTracker
 
 address = '00:19:FD:ED:E1:25'  ## address of my wiimote
 address2 = '00:19:FD:D7:63:B1' ## address of my second wiimote
-talker  = Talker(address2)## Only use a single talker here! 
+talker  =  Wiimote3dTracker(address2)## Only use a single talker here! 
 talker.parser = ButtonParser() ## Replace the IR parser with the button one. 
 talker.connect() ##Connect to the wiimote
-while 1: talker.refresh();time.sleep(0.01)
+talker.start()
 
