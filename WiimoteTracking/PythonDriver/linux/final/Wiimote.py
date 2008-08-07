@@ -30,7 +30,8 @@ class Wiimote(threading.Thread):
 		self.receiveSocket = newSocket()
 		self.sendSocket = newSocket()
 		self.data = None
-              
+      self.updates = False
+      
 	def send(self, *data ):
 		#for d in join( data ): print ord(d).__hex__()[2:],
 		#print
