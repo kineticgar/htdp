@@ -37,7 +37,8 @@ class Wiimote3dTracker(threading.Thread):
 		self.wiimotes= [Wiimote(adr) for adr in self.adrs]
 		self.coordinateTracker = CoordinateTrackerFactory(len(self.wiimotes),raw = raw)
 		self.irParser = IRparser()
-		self.listeners = []
+		self.polarListeners = []
+		self.cartesianListeners = []
 		
 		## set up the stuff needed for threading:
 		threading.Thread.__init__ (self)
@@ -93,15 +94,19 @@ class Wiimote3dTracker(threading.Thread):
 			xys1, xys2 = self.irParser.parseWiiData( data )
 			if xys1 and xys2:
 				self.coordinateTracker.process( xys1, xys2 )
-			pos1,pos2 = self.coordinateTracker.getCoordinates()
-			
-			if pos1 and pos2: ## IR parser may return None...
-				if self.useNormalisation:
-					pos1 = self._normalise(pos1)
-					pos2 = self._normalise(pos2)
-				result = True
-				for l in self.listeners:
+			result = True
+			if len(self.cartesianListeners) > 0:
+				pos1,pos2 = self.coordinateTracker.getListOfCartesianCoordinates()
+				for l in self.cartesianListeners:
 					result &= l.refresh(pos1,pos2)
+			if len(self.polarListeners) > 0:
+				midInPolar = self.coordinateTracker.getMidpointInPolar()
+				midInCart  = self.coordinateTracker.getMidpointInCartesian()
+				tilt = self.coordinateTracker.getTilt()
+				yaw = self.coordinateTracker.getYaw()
+				for l in self.polarListeners:
+					result &= l.refresh(midInPolar,midInCart,yaw,tilt)
+					
 			## if one of the listeners wants us to exit, or if the A button is pressed
 			## on any remote, then exit.
 			if not result:# or self.irParser.checkButtonA(data): 
@@ -110,55 +115,18 @@ class Wiimote3dTracker(threading.Thread):
 				sys.exit()	
 
 
-	def calibrate(self,MAX=(800,600,1024),howLong = 5):
-		## Use this to calibrate the output of the coordinate trackers
-		## it loops round, recordng the range of values sent by the 
-		## coordinateTracker. 
-		## So when this is being called, the IR dots should be waved about
-		## as much as possible (to the edges of the wiimotes field of view). 
-		print "Starting calibration..."
-		startTime = time.time()
-		minxyzs,maxxyzs = [2*31]*3,[-2**31]*3##+- inf...not nice but it will do. 
-		while time.time() -startTime < howLong:
-			self.refresh()
-			(x1,y1,z1),(x2,y2,z2) = self.coordinateTracker.getCoordinates()
-			minxyzs = [min(minxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
-			maxxyzs = [max(maxxyzs[i],(x1,y1,z1)[i],(x2,y2,z2)[i]) for i in range(3)]
-		self.useNormalisation = True ## This is used in refresh()
-		
-		## Check for div b zero errors and calculate the re-scaling
-		self.minxyzs,self.maxxyzs = minxyzs,maxxyzs
-		if maxxyzs[0]-minxyzs[0] != 0: 
-			s0 = MAX[0]/(float(maxxyzs[0]-minxyzs[0]))
-		else: s0 = 1
-		if maxxyzs[1]-minxyzs[1] != 0: 
-			s1 = MAX[1]/(float(maxxyzs[1]-minxyzs[1]))
-		else: s1 = 1
-		if maxxyzs[2]-minxyzs[2] != 0: 
-			s2 = MAX[2]/(float(maxxyzs[2]-minxyzs[2]))
-		else: s2 = 1
-		## Scalings should be the same in each direction to avoid distortion
-		## so lets use the maximum 
-		self.scale=max(s0,s1,s2) 
-		print "calibration done.",self.scale
-		
-	def _normalise(self,(x,y,z),returnAsInt= True):
-		## scales the cooridinate to inside the limits set by calibrate.
-		## Should only be called after calibrate has been called. 
-		x -= self.minxyzs[0]
-		y -= self.minxyzs[1]
-		z -= self.minxyzs[2]
-		x *= self.scale
-		y *= self.scale	
-		z *= self.scale
-		if returnAsInt:
-			return map(int,[x,y,z])
-		return x,y,z
+	
 			
-			
-	def register(self, listener):
-		## Adds a listener to the talker
-		self.listeners += [listener]
+	def register(self, listener, useCartesian = False ):
+		""" Adds a listener to the talker with the specified output format.
+			if useCartesian is set, then the format sent to the listener will
+			be in catesian coordinates of each LED. If it is false then the
+			output will be the polar coordinates of the midpoint, the cartesian
+			 coordinates of the midpoint and the tilt and roll of the LEDs""" 
+		if useCartesian: 
+			self.cartesianListeners += [listener]
+		else:
+			self.polarListeners += [listener]
 		
 	def getNumberOfWiimotes(self):
 		return len(self.adrs)
