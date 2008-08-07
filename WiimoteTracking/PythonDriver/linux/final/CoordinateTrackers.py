@@ -49,23 +49,44 @@ from math import sin,cos,tan,atan,pi,sqrt
 def cross(v1,v2):
 	return v1[0]*v2[0] + v1[1]*v2[1]
 
+def arcTan(a,b):
+	if b == 0: 
+		if a>0: result =  pi/2
+		else: result =  -pi/2
+	else: result =  atan(a/b)
+	return result
+
 class CoordinateTracker:
 	radiansPerPixel = (pi / 4) / 1024.0
-	def __init__(self):
-		## We use a dictionary to store values
-		self.x1  = 0
-		self.x2  = 0
-		self.dx  = 0
-		self.y1  = 0
-		self.y2  = 0
-		self.dy  = 0
-		self.z1  = 0
-		self.z2  = 0
-		self.dz  = 0
-		self.buttonA = 0
-
-	
+	def length(self):
+		"""Returns the length between the two points"""	
 		
+	def getMidpointinCartesian(self):
+		"""Return the midpoint of the two points in cartesian coordinates.
+			The origin can be arbitrary
+			"""
+	
+	def getYaw(self):
+		"""Returns the yaw in radians
+		-p1/2 < yaw < pi/2
+		"""
+		 
+	def getTilt(self):
+		"""Returns tilt (roll) in radians
+		-p1/2 < tilt < pi/2
+		"""
+		
+	def getMidpointInPolar(self):
+		"""Returns the midpoint between the two points in polar coordinates
+			theta,phi,z 
+			theta is the horizontal angle, phi is vertical. 
+			-pi < theta,phi < pi
+			0 <= z
+		"""
+	def getListOfCartesianCoordinates(self):
+		"""Returns the cartesian coordinates of each point"""
+		
+	
 	def process(*args):
 		raise Error("Usage Error: CoordinateTracker must be subclassed to use process")
 
@@ -91,7 +112,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 	def length(self):
 		return self.distBetweenDots	
 		
-	def getMidpointinCartesian(self):
+	def getMidpointInCartesian(self):
 		cx,sx = cos(self.thetaX), sin(self.thetaX)
 		cy,sy = cos(self.thetaY), sin(self.thetaY)
 		z = self.z
@@ -100,17 +121,12 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		
 	def getYaw(self):
 		 return self.yaw
+		 
 	def getTilt(self):
 		return self.tilt
 		
-	def getHorizontalAngleToMidpoint(self):
-		return self.thetaX
-	
-	def getVertiacalAngleToMidpoint(self):
-		return self.thetaY
-	
-	def getDistanceToMidpoint(self):
-		return self.z
+	def getMidpointInPolar(self):
+		return self.thetaX, self.thetaY, self.z
 		
 	def getListOfCartesianCoordinates(self):
 		cx,sx = cos(self.thetaX), sin(self.thetaX)
@@ -125,49 +141,65 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		return (midX + dx, midY + dy, midZ + dz),(midX - dx, midY - dy, midZ - dz)
 		
 	def  process(self, xys1,xys2 ):
+		"""This sets up the variables used in each of the above methods"""
+	
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 
-		if 1023 in(x1,x2):
-			return
-		
-		dx = (x2-x1)*self.radiansPerPixel
-		dy = (y2-y1)*self.radiansPerPixel
-		tanX = tan(dx)
-		tanY = tan(dy)
-		
-		if dx == 0 and dy == 0: return
-		z = self.distBetweenDots/2/sqrt(tanX * tanX + tanY * tanY)
-		self.z = z
-		self.thetaX = (1024 -x1-x2)*self.radiansPerPixel/2
-		self.thetaY = (768 - y1-y2)*self.radiansPerPixel/2
+		if not 1023 in(x1,x2):
+			
+			self.thetaX = (1024 -x1-x2)*self.radiansPerPixel/2
+			self.thetaY = (768 - y1-y2)*self.radiansPerPixel/2
+			self.yaw = -self.thetaX
+			 
+			dx = (x2-x1)*self.radiansPerPixel
+			dy = (y2-y1)*self.radiansPerPixel
+			
+			self.tilt = arcTan(dy,dx)
+			tanX = tan(dx)
+			tanY = tan(dy)
+			
+			if dx != 0 or dy != 0: 
+				z = self.distBetweenDots/2/sqrt(tanX * tanX + tanY * tanY)
+				self.z = z
 
-		self.yaw = self.thetaX
-		if dx != 0:	self.tilt = atan(dy/dx) 
 		
 
 class DoubleCoordinateTracker( CoordinateTracker ):	
-	old =0,0
-	oldVectors = (0,0),(0,0)
+
 	distanceBetweenWiimotes = 37
 	switch = 0
 	visible = 15
+	def __init__(self):
+		self.x1,self.y1,self.z1 = 0,0,0
+		self.x2,self.y2,self.z2 = 0,0,0
+		self.dx,self.dy,self.dz = 0,0,0
+		self.oldVectors = (0,0,0),(0,0,0)
 	def length(self):
-		return math.sqrt((self.x1-self.x2)**2+(self.y1-self.y2)**2+(self.z1-self.z2)**2)
+		return sqrt(self.dx**2+self.dy**2+self.dz**2)
 	
 	def getListOfCartesianCoordinates(self):
 		return (self.x1,self.y1,self.z1), (
 				self.x1 + self.dx,
 				self.y1 + self.dy,
 				self.z1 + self.dz)
-	def getMidpoint(self):
+				
+	def getMidpointInCartesian(self):
 		return (self.x1+self.x2)/2, (self.y1+self.y2)/2,(self.z1+self.z2)/2
 
-	def getAngleFromCenter(self):
+	def getYaw(self):
 		s = sqrt(self.dx**2 + self.dy**2)
-		if s == 0: 
-			if z>0:return pi/2
-			return pi/2
-		return math.atan(self.dz/s)
+		return arcTan(self.dz,s)
+		
+	def getTilt(self):
+		s = sqrt(self.dx**2 + self.dz**2)
+		return arcTan(self.dy,s)
+		
+	def getMidpointInPolar(self):
+			theta = arcTan(self.dz,self.dx)
+			phi = arcTan(self.dy,self.dz)
+			dx,dy,dz =  (self.x1+self.x2)/2, (self.y1+self.y2)/2,(self.z1+self.z2)/2
+			R = sqrt(dx*dx+dy*dy+dz*dz)
+			return theta,phi,R
 	
 	def convertTo3d(self,xA,xB,yA,yB):
 			"""See documentation for an explanation of the maths here"""
@@ -181,7 +213,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 				z = self.distanceBetweenWiimotes / t
 				x = z * tan(thetaAx) - self.distanceBetweenWiimotes/2
 				y = z * (tan(thetaAy) + tan(thetaBy)) /2
-				return x,y,z
+				return -x,y,z
 			return 0,0,0
 	
 	def process(self, xys1,xys2 ):
@@ -240,12 +272,6 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 				xA1,xA2,yA1,yA2 = xA2,xA1,yA2,yA1
 				xB1,xB2,yB1,yB2 = xB2,xB1,yB2,yB1
 				self.switch = 0
-
-		
-		## if we've lost sight of one led totaly, then don't update
-		#update &= (1023,1023) not in [(xA1,xB1),(xA2,xB2)]
-		#update &= (xA1 != 1023  and xB1 != 1023) or (xA2 != 1023 and xB2 != 1023)
-		
 				
 		if update and 1023 not in (xA1,xB1):
 			self.x1,self.y1,self.z1 = self.convertTo3d(xA1,xB1,yA1,yB1)
