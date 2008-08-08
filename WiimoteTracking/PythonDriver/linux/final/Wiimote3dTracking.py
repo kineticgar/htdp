@@ -49,7 +49,11 @@ class Wiimote3dTracker(threading.Thread):
 		print "Connecting to wiimotes..."
 		if listOfAddresses:
 			self.wiimotes= [Wiimote(adr) for adr in listOfAddresses]
-		return 	not False in [ wm.connect() for wm in self.wiimotes]
+		result = not False in [ wm.connect() for wm in self.wiimotes]
+		if result:
+			for i in range(len(self.wiimotes)):
+				self.wiimotes[i].setLEDinBinary(i)
+		return result
 		
 	def search(self):
 		print "Searching for wiimotes..."
@@ -87,8 +91,7 @@ class Wiimote3dTracker(threading.Thread):
 	def refresh(self):
 		## refresh retrieves the data from each wiimote, parses them and 
 		## sends them to whoever is listening via the refresh method.
-		## if any listener returns false, or the a button is pressed on a remote
-		## then we disconnect and quit. 
+		## if any listener returns false, then we disconnect and quit. 
 		if all([wm.updated for wm in self.wiimotes]):
 			data  = [wm.getData() for wm in self.wiimotes]
 			xys1, xys2 = self.irParser.parseWiiData( data )
@@ -115,7 +118,8 @@ class Wiimote3dTracker(threading.Thread):
 				sys.exit()	
 
 
-	
+	def calibrate(*args):
+		Warning("Callibrate not currently implemented")
 			
 	def register(self, listener, useCartesian = False ):
 		""" Adds a listener to the talker with the specified output format.
