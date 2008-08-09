@@ -61,6 +61,7 @@ class Wiimote(threading.Thread):
 			self.updated = True
 			
 	def setLEDinBinary(self,n):
+		"""Sets the LEDs on the wiimote to the binary representation of n"""
 		self.send(0x52,0x11,int((n+1)<<4))
 			
 	def connect(self):

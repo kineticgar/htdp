@@ -195,8 +195,8 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		return arcTan(self.dy,s)
 		
 	def getMidpointInPolar(self):
-			theta = arcTan(self.dz,self.dx)
-			phi = arcTan(self.dy,self.dz)
+			theta = arcTan(self.x1+self.x2,self.z1+self.z2)
+			phi = arcTan(self.y1+self.y2,self.z1+self.z2)
 			dx,dy,dz =  (self.x1+self.x2)/2, (self.y1+self.y2)/2,(self.z1+self.z2)/2
 			R = sqrt(dx*dx+dy*dy+dz*dz)
 			return theta,phi,R

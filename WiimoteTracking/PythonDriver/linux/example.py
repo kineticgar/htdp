@@ -37,20 +37,12 @@ tracker  = Wiimote3dTracker(address1,address2)
 
 tracker.connect() ##Connect to the wiimote
 
-## These are various ways of dealing with the data.
-## Scene is a 3D head tracking  scene using python visual
-## Printer just prints the position data out to the standard out
-## Dots uses pygame to display what the wiimote sees.
-from Animations.Head3D import Scene
-from Animations.PyGameDots import Dots
-from final.Listeners import *
-from Animations.SimpleCubes import Scene
-#from Animations.Arrow import Scene
 
-tracker.register( Scene()  )
+
+
 tracker.register( Printer() )
 #tracker.register( Socket() )
-#	tracker.register( Dots() )
+
 #tracker.callibrate()
 while 1: 
 	tracker.refresh()
