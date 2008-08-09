@@ -101,14 +101,17 @@ class Wiimote3dTracker(threading.Thread):
 			if len(self.cartesianListeners) > 0:
 				pos1,pos2 = self.coordinateTracker.getListOfCartesianCoordinates()
 				for l in self.cartesianListeners:
-					result &= l.refresh(pos1,pos2)
+					result &= (l.refresh(pos1,pos2) != False)
 			if len(self.polarListeners) > 0:
 				midInPolar = self.coordinateTracker.getMidpointInPolar()
 				midInCart  = self.coordinateTracker.getMidpointInCartesian()
 				tilt = self.coordinateTracker.getTilt()
 				yaw = self.coordinateTracker.getYaw()
 				for l in self.polarListeners:
-					result &= l.refresh(midInPolar,midInCart,yaw,tilt)
+						result &= (l.refresh(midInPolar,midInCart,yaw,tilt) != False)
+				
+					
+						
 					
 			## if one of the listeners wants us to exit, or if the A button is pressed
 			## on any remote, then exit.
@@ -121,17 +124,40 @@ class Wiimote3dTracker(threading.Thread):
 	def calibrate(*args):
 		Warning("Callibrate not currently implemented")
 			
-	def register(self, listener, useCartesian = False ):
-		""" Adds a listener to the talker with the specified output format.
-			if useCartesian is set, then the format sent to the listener will
-			be in catesian coordinates of each LED. If it is false then the
-			output will be the polar coordinates of the midpoint, the cartesian
-			 coordinates of the midpoint and the tilt and roll of the LEDs""" 
-		if useCartesian: 
-			self.cartesianListeners += [listener]
+	def register(self, listener):
+		""" Adds a listener to the tracker. 
+			Whenever Wiimote3dTracker.refresh is called, listener.refresh gets called with one of the folowing sets of arguments: 
+			> listener.refresh((x1,y1,z1),(x2,y2,z2))
+			where (x1,y1,z1),(x2,y2,z2) are the cartesian coordinates of the two LEDs being tracked
+			or
+			> listener.refresh((theta,phi,R),(x,y,z),yaw,tilt)
+			where 'theta' is the horizontal angle in radians towards the midpoint of the two LEDs being tracked, 'phi' is the vertical angle and 'R' is the distance to the midpoint. ('x','y','z') are the cartesian coordinates of the midpoint. 'yaw' is the horizontal angle between the LEDs and 'tilt' is the vertical angle.
+			
+			The listeners 'refresh' method must accept either two or four arguments and will be called with the corresponding set of values.
+			"""
+			## This tests weather the listerner has a 'refresh' method	 
+		if not hasattr(listener,'refresh') or not hasattr(listener.refresh,'func_code'):
+			raise AttributeError("%s does not have a 'refresh' method.\n Type help(Wiimote3DTracker.register) for more infomation on refresh methods."% listener.__class__)
+		## Ok, so we have a refresh method (probably) but we need to make sure 
+		## it has the correct number of 	arguments
+		elif listener.refresh.func_code.co_argcount == 3: 
+			if listener not in self.cartesianListeners:
+				self.cartesianListeners += [listener]
+		elif listener.refresh.func_code.co_argcount == 5:
+			if listener not in self.polarListeners:
+				self.polarListeners += [listener]
 		else:
-			self.polarListeners += [listener]
-		
+			print listener.refresh.func_code.co_argcount
+			raise AttributeError("%s does not have a valid 'refresh' method.\n Type help(Wiimote3DTracker.register) for more infomation on refresh methods." % listener.__class__)			
+	
+	def unregister(self,listener):
+		"""Removes 'listener' from the list of registered listeners"""
+		if listener in self.cartesianListeners:
+			self.cartesianListeners.remove(listener)
+		if listener in self.polarListeners:
+			self.polarListeners.remove(listener)
+			
+			
 	def getNumberOfWiimotes(self):
 		return len(self.adrs)
 		
