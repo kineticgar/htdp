@@ -19,7 +19,7 @@ import threading
 from Wiimote import Wiimote
 from CoordinateTrackers import CoordinateTrackerFactory
 from IRparser import IRparser
-from bluetooth import discover_devices,lookup_name
+from BluetoothSupport import searchForWiimotes
 import time
 
 class Wiimote3dTracker(threading.Thread):
@@ -55,26 +55,10 @@ class Wiimote3dTracker(threading.Thread):
 				self.wiimotes[i].setLEDinBinary(i)
 		return result
 		
-	def search(self):
-		print "Searching for wiimotes..."
-		addresses = discover_devices(0)
-		
-		print "Found %i devices" % len(addresses)
-		## We need to remove any non- wiimotes. 
-		addresses.sort(reverse = True)
-		threads = [WiimoteIdentifier(x) for x in addresses]
-		for t in threads: t.run()
-		while any([t.isAlive() for t in threads]): ## checks if any threads are still running
-			time.sleep(0.1)
-		## now we can remove the ones that passed
-		wiimotes = []
-		for i in range(len(addresses)):
-			if threads[i].isWiimote:
-				wiimotes += [addresses[i]]
-	
-		print "Found %i wiimotes" % len(wiimotes)
-		return wiimotes
-	search = classmethod(search)
+	## searchForWiimotes() returns a function. 
+	## classmethod means search is 'static' i,e. no instance 
+	## of a Wiimote3dTracker is needed
+	search = classmethod(searchForWiimotes())
 		
 	def disconnect(self):
 		# Disconnects from all wiimotes.
@@ -170,19 +154,4 @@ class Wiimote3dTracker(threading.Thread):
 		i = self.adrs.index(address)
 		self.wiimotes[i].vibrate(duration)
 		
-class WiimoteIdentifier(threading.Thread):
-	def __init__(self,address):
-		self.address = address
-		self.isWiimote = None
-		## set up the stuff needed for threading
-		threading.Thread.__init__ (self) 
-		
-	def run(self):
-		print "Running thread for addr %s" % self.address
-		name = lookup_name(self.address)
-		self.isWiimote = ( name == 'Nintendo RVL-CNT-01') 
-		print "addr %s --> %s: %s" %(self.address,self.isWiimote,name)
-		
-	def check(self):
-			## Totaly not needed, but makes using this class nicer. 
-			self.start()
+

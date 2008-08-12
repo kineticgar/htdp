@@ -15,8 +15,9 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """This is a group of wrappers for various ooperating systems"""
+from os import name
 def newSocket():
-		from os import name
+		
 		if name == "posix":
 			return __LinuxL2CAPSocket()
 		if name == "nt" or name =="ce": 
@@ -82,3 +83,58 @@ class __MacL2CAPSocket():
 		
 	def send(self,string):
 		pass
+		
+def __linuxSearch():
+		from bluetooth import discover_devices,lookup_name
+		import time, threading
+		## Threads are used to look up names to avoid the 
+		## problem of waiting for each device to respond before
+		## moving on to the next which may have left 'discoverable'
+		## mode. It may be posible to get this info when we do the
+		## initial search...
+		
+		class LinuxNameGetter(threading.Thread):
+			
+			def __init__(self,address):
+				print "Address: ",address
+				self.name = None
+				## set up the stuff needed for threading
+				threading.Thread.__init__ (self) 
+				self.addr = address
+			def run(self):
+				print "Starting thread for addr %s" % self.addr
+				self.name = lookup_name(self.addr)
+				print "addr %s --> %s" %(self.addr,self.name)
+				
+		print "Searching for wiimotes..."
+		addresses = discover_devices(0)
+		print "Found %i devices" % len(addresses)
+		## create the thread things
+		threads = [LinuxNameGetter(x) for x in addresses]
+		for t in threads: t.start()
+		while any([t.isAlive() for t in threads]): ## checks if any threads are still running
+			time.sleep(0.1)
+		return [(t.addr,t.name) for t in threads]
+		
+
+	
+		
+def searchForWiimotes():
+		""" Returns a platform specific function that will return a list of all wiimotes in range
+		"""
+		## Each __[os]Search  should return a list of tuples 
+		## in the following format:
+		## (address, name) 
+		## for each available bluetooth device in range. 
+		if name == "posix":
+			search =  __linuxSearch
+		elif name == "nt" or name =="ce": 
+			search = __windowsSearch
+		elif name == "mac": 
+			search = __macSearch
+		## No support for OS, but lets try linux...
+		else:
+			Warning("Operating system not supported")
+			devices = __LinuxSearch()
+		
+		return lambda dummy: [e[0] for e in search() if e[1] == 'Nintendo RVL-CNT-01']
