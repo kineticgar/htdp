@@ -147,8 +147,8 @@ class SingleCoordinateTracker( CoordinateTracker ):
 
 		if not 1023 in(x1,x2):
 			
-			self.thetaX = (1024 -x1-x2)*self.radiansPerPixel/2
-			self.thetaY = (768 - y1-y2)*self.radiansPerPixel/2
+			self.thetaX = (x1 + x2 +1024)*self.radiansPerPixel/2
+			self.thetaY = (y1 + y2 + 768)*self.radiansPerPixel/2
 			self.yaw = -self.thetaX
 			 
 			dx = (x2-x1)*self.radiansPerPixel
@@ -159,7 +159,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 			tanY = tan(dy)
 			
 			if dx != 0 or dy != 0: 
-				z = self.distBetweenDots/2/sqrt(tanX * tanX + tanY * tanY)
+				z = self.distBetweenDots/( 2*sqrt(tanX * tanX + tanY * tanY) ) 
 				self.z = z
 
 		
@@ -208,7 +208,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 			thetaAy = (yA-384)*self.radiansPerPixel
 			thetaBy = (yB-384)*self.radiansPerPixel
 					
-			t = tan(thetaAx) - tan(thetaBx) 
+			t = abs(tan(thetaAx) - tan(thetaBx) )
 			if t!= 0:
 				z = self.distanceBetweenWiimotes / t
 				x = z * tan(thetaAx) - self.distanceBetweenWiimotes/2
