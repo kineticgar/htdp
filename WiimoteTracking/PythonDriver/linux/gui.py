@@ -41,9 +41,9 @@ class App:
 		self.connectButton.grid(row = 0,column = 1,sticky = E)
 		self.connectButton.config(state = DISABLED)
 		
-		self.callibrateButton = Button(frameForButtons, text = "Callibrate", command = None )
-		self.callibrateButton.grid(row = 0,column = 2,sticky = E)
-		self.callibrateButton.config(state = DISABLED)
+		self.calibrateButton = Button(frameForButtons, text = "calibrate", command = None )
+		self.calibrateButton.grid(row = 0,column = 2,sticky = E)
+		self.calibrateButton.config(state = DISABLED)
 				
 		self.listOfAdrs = [] ## a list of all the wiimotes we know about.
 		self.listOfAdrsButton = Listbox(master,width = 17,selectmode = MULTIPLE)
@@ -80,7 +80,7 @@ class App:
 			self.connectButton.destroy()
 			self.disconnectButton = Button(self.frameForButtons, text = "Disconnect", fg = "red", command = self.disconnect)
 			self.disconnectButton.grid(row = 0,column = 1,sticky = E)
-			self.callibrateButton.config(state = ACTIVE, command = lambda:self.tracker.calibrate((0,0,0),(800,600,100)))
+			self.calibrateButton.config(state = ACTIVE, command = lambda:self.tracker.calibrate((0,0,0),(800,600,100)))
 			
 			#self.calibrateButton = Button(self.frameForButtons, text="calibrate", command = self.tracker.calibrate)
 			#self.calibrateButton.pack(side=LEFT)
@@ -111,6 +111,7 @@ class App:
 		#self.calibrateButton.destroy()
 		self.connectButton = Button(self.frameForButtons, text="Connect", command = self.connect)
 		self.connectButton.grid(row = 0,column = 1,sticky = E)
+		self.calibrateButton.config(state = DISABLED)
 		self.destroyWiimoteButtons()
 		
 	def updatelistOfAdrs(self,listOfAdrsButton):
@@ -124,8 +125,8 @@ class App:
 	def refresh(self,(x1,y1,z1),(x2,y2,z2))	:
 		## Giving the App class a refrech method means it can 
 		## be registered as a listener.
-		self.dots.coords(self.dot1, x1,y1,x1+3,y1+3)		
-		self.dots.coords(self.dot2, x2,y2,x2+3,y2+3)
+		self.dots.coords(self.dot1, x1,600-y1,x1+3,600-y1+3)		
+		self.dots.coords(self.dot2, x2,600-y2,x2+3,600-y2+3)
 		return True
 		
 	def vibrate(self,duration = 1):

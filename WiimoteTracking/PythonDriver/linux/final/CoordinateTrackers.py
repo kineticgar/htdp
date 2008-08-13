@@ -133,7 +133,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		cx,sx = cos(self.thetaX), sin(self.thetaX)
 		cy,sy = cos(self.thetaY), sin(self.thetaY)
 		z = self.z
-		midX,midY,midZ = -z*sx*cy, -z*cx*sy, z*cx*cy
+		midX,midY,midZ = z*sx*cy, -z*cx*sy, z*cx*cy
 		l = self.distBetweenDots/2
 		dx = l*cos(self.tilt)*cos(self.yaw)
 		dy = l*sin(self.tilt)#*cos(self.yaw)

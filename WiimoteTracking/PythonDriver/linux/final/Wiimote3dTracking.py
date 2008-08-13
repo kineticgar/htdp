@@ -120,26 +120,28 @@ class Wiimote3dTracker(threading.Thread):
 			points =  self.coordinateTracker.getListOfCartesianCoordinates()
 			minXYZ = [ min ([minXYZ[i]] + [point[i] for point in points]) for i in [0,1,2] ]
 			maxXYZ = [ max ([maxXYZ[i]] + [point[i] for point in points]) for i in [0,1,2] ]
-		factor = max(maxXYZ)
+		factor = max([abs(maxXYZ[i] - minXYZ[i]) for i in [0,1,2]])
 		
 		def scale((x,y,z)):
 			## Yeah, I know this /could/ be re-factored.
 			## But this is simpler. 
+			print y,
 			if factor != 0:
-				x = float(x - minXYZ[0])
+				x = float(x) - (minXYZ[0]+maxXYZ[0])/2 
 				x = x/factor
-				x = x*(maxX - minX)
-				x = x+minX
+				x = x*abs(maxX - minX)
+				x = x+(maxX + minX)/2
 			
-				y = float(y - minXYZ[1])
+				y = float(y) - (maxXYZ[1] + minXYZ[1])/2
 				y = y/factor
-				y = y*(maxY - minY)
-				y = y+minY
+				y = y*abs(maxY - minY)
+				y = y+(maxY + minY)/2
 
-				z = float(z - minXYZ[2])
+				z = float(z) - (maxXYZ[2]+ minXYZ[2])/2
 				z = z/factor
-				z = z*(maxZ - minZ)
-				z = z+minZ
+				z = z*abs(maxZ - minZ)
+				z = z+(maxZ + minZ)/2
+			print "--> %i" %y
 			if integer: return map(int,(x,y,z))
 			else: return x,y,z
 		self.scale = scale
