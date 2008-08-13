@@ -103,6 +103,7 @@ class SingleIRRawCoordinates( CoordinateTracker ):
 class SingleCoordinateTracker( CoordinateTracker ):	
 
 	distBetweenDots = 150
+
 	def __init__(self):
 		self.tilt = 0
 		self.yaw =  0
@@ -110,7 +111,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		self.thetaY = 0
 		self.z = 0
 	def length(self):
-		return self.distBetweenDots	
+		return self.distBetweenDots
 		
 	def getMidpointInCartesian(self):
 		cx,sx = cos(self.thetaX), sin(self.thetaX)
@@ -132,12 +133,11 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		cx,sx = cos(self.thetaX), sin(self.thetaX)
 		cy,sy = cos(self.thetaY), sin(self.thetaY)
 		z = self.z
-		midX,midY,midZ = z*sx*cy, z*cx*sy, z*cx*cy
+		midX,midY,midZ = -z*sx*cy, -z*cx*sy, z*cx*cy
 		l = self.distBetweenDots/2
 		dx = l*cos(self.tilt)*cos(self.yaw)
-		dy = l*sin(self.tilt)
+		dy = l*sin(self.tilt)#*cos(self.yaw)
 		dz = l*cos(self.tilt)*sin(self.yaw)
-		
 		return (midX + dx, midY + dy, midZ + dz),(midX - dx, midY - dy, midZ - dz)
 		
 	def  process(self, xys1,xys2 ):
@@ -147,8 +147,8 @@ class SingleCoordinateTracker( CoordinateTracker ):
 
 		if not 1023 in(x1,x2):
 			
-			self.thetaX = (x1 + x2 +1024)*self.radiansPerPixel/2
-			self.thetaY = (y1 + y2 + 768)*self.radiansPerPixel/2
+			self.thetaX = (x1 + x2 -1024)*self.radiansPerPixel/2
+			self.thetaY = (y1 + y2 - 768)*self.radiansPerPixel/2
 			self.yaw = -self.thetaX
 			 
 			dx = (x2-x1)*self.radiansPerPixel
