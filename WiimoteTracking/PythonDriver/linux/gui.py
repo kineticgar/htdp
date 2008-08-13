@@ -11,6 +11,8 @@ class App:
 	
 	def __init__(self,master,img):             
 		
+		self.tracker = None ## This will be a 3D tracker. 
+		
 		frameForDiarams = Frame(master)
 		self.frameForDiarams = frameForDiarams
 		frameForDiarams.grid(row = 0,column=0,rowspan = 2)
@@ -37,10 +39,17 @@ class App:
 		## A button to conect to wiimotes
 		self.connectButton = Button(frameForButtons, text="Connect", command = self.connect)
 		self.connectButton.grid(row = 0,column = 1,sticky = E)
+		self.connectButton.config(state = DISABLED)
 		
+		self.callibrateButton = Button(frameForButtons, text = "Callibrate", command = None )
+		self.callibrateButton.grid(row = 0,column = 2,sticky = E)
+		self.callibrateButton.config(state = DISABLED)
+				
 		self.listOfAdrs = [] ## a list of all the wiimotes we know about.
 		self.listOfAdrsButton = Listbox(master,width = 17,selectmode = MULTIPLE)
 		self.listOfAdrsButton.grid(row = 1,column = 0,columnspan = 2,sticky = W)
+	
+
 	
 		self.frameForDots = Frame()
 		self.frameForDots.grid(row = 2,columnspan  =2 )
@@ -48,13 +57,14 @@ class App:
 		self.dotsButton.grid(column = 0, sticky = E)
 		self.dotsOn = False
 		
-		self.tracker = None ## This will be a 3D tracker. 
+		
 		
 	def search(self):
 		l =  Wiimote3dTracker.search()
 		## l is a list of all wiimotes in range
 		if len(l) >0:
 			self.updatelistOfAdrs(l)
+			self.connectButton.config(state = ACTIVE) 
 			return True
 		return False
 			
@@ -70,6 +80,7 @@ class App:
 			self.connectButton.destroy()
 			self.disconnectButton = Button(self.frameForButtons, text = "Disconnect", fg = "red", command = self.disconnect)
 			self.disconnectButton.grid(row = 0,column = 1,sticky = E)
+			self.callibrateButton.config(state = ACTIVE, command = lambda:self.tracker.calibrate((0,0,0),(800,600,100)))
 			
 			#self.calibrateButton = Button(self.frameForButtons, text="calibrate", command = self.tracker.calibrate)
 			#self.calibrateButton.pack(side=LEFT)

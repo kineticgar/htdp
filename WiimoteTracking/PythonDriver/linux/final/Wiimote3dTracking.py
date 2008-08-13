@@ -76,6 +76,7 @@ class Wiimote3dTracker(threading.Thread):
 		## refresh retrieves the data from each wiimote, parses them and 
 		## sends them to whoever is listening via the refresh method.
 		## if any listener returns false, then we disconnect and quit. 
+		
 		if all([wm.updated for wm in self.wiimotes]):
 			data  = [wm.getData() for wm in self.wiimotes]
 			xys1, xys2 = self.irParser.parseWiiData( data )
@@ -84,30 +85,65 @@ class Wiimote3dTracker(threading.Thread):
 			result = True
 			if len(self.cartesianListeners) > 0:
 				pos1,pos2 = self.coordinateTracker.getListOfCartesianCoordinates()
+				pos1,pos2 = self.scale(pos1),self.scale(pos2)
 				for l in self.cartesianListeners:
 					result &= (l.refresh(pos1,pos2) != False)
+					## The '!= False' allows listeners to return None (no return) 
+					## as None != False
 			if len(self.polarListeners) > 0:
 				midInPolar = self.coordinateTracker.getMidpointInPolar()
 				midInCart  = self.coordinateTracker.getMidpointInCartesian()
+				midInCart = self.scale( midInCart ) 
 				tilt = self.coordinateTracker.getTilt()
 				yaw = self.coordinateTracker.getYaw()
 				for l in self.polarListeners:
-						result &= (l.refresh(midInPolar,midInCart,yaw,tilt) != False)
-				
-					
+						result &= (l.refresh(midInPolar,midInCart,yaw,tilt) != False)	
+						## The '!= False' allows listeners to return None (no return) 
+						## as None != False
 						
-					
-			## if one of the listeners wants us to exit, or if the A button is pressed
-			## on any remote, then exit.
+			## if one of the listeners wants us to exit,  then exit.
 			if not result:# or self.irParser.checkButtonA(data): 
 				self.disconnect()
 				import sys
 				sys.exit()	
 
-
-	def calibrate(*args):
-		Warning("Callibrate not currently implemented")
+	def scale(self,p): return p
+	
+	def calibrate(self,(minX,minY,minZ),(maxX,maxY,maxZ),duration = 5,integer = True):
+		""" Collects position values for 'duration' number of seconds and works out a scaling based on these values to fit inside the box boundes by (minX,minY,minZ),(maxX,maxY,maxZ).
+			It then replaces 'scale' to use these values
+		"""
+		t0 = time.time()
+		minXYZ,maxXYZ = [2*31]*3,[-2**31]*3##+- inf...not nice but it will do...
+		while time.time() - t0 < duration: ## Probably not the best guard
+			self.refresh()
+			points =  self.coordinateTracker.getListOfCartesianCoordinates()
+			minXYZ = [ min ([minXYZ[i]] + [point[i] for point in points]) for i in [0,1,2] ]
+			maxXYZ = [ max ([maxXYZ[i]] + [point[i] for point in points]) for i in [0,1,2] ]
+		factor = max(maxXYZ)
+		
+		def scale((x,y,z)):
+			## Yeah, I know this /could/ be re-factored.
+			## But this is simpler. 
+			if factor != 0:
+				x = float(x - minXYZ[0])
+				x = x/factor
+				x = x*(maxX - minX)
+				x = x+minX
 			
+				y = float(y - minXYZ[1])
+				y = y/factor
+				y = y*(maxY - minY)
+				y = y+minY
+
+				z = float(z - minXYZ[2])
+				z = z/factor
+				z = z*(maxZ - minZ)
+				z = z+minZ
+			if integer: return map(int,(x,y,z))
+			else: return x,y,z
+		self.scale = scale
+		
 	def register(self, listener):
 		""" Adds a listener to the tracker. 
 			Whenever Wiimote3dTracker.refresh is called, listener.refresh gets called with one of the folowing sets of arguments: 
