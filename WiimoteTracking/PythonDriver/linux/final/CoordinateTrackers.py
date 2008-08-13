@@ -110,6 +110,7 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		self.thetaX = 0
 		self.thetaY = 0
 		self.z = 0
+		self.dx,self.dy = 0,0
 	def length(self):
 		return self.distBetweenDots
 		
@@ -133,9 +134,9 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		cx,sx = cos(self.thetaX), sin(self.thetaX)
 		cy,sy = cos(self.thetaY), sin(self.thetaY)
 		z = self.z
-		midX,midY,midZ = z*sx*cy, -z*cx*sy, z*cx*cy
+		midX,midY,midZ = -z*sx*cy, z*cx*sy, z*cx*cy
 		l = self.distBetweenDots/2
-		dx = l*cos(self.tilt)*cos(self.yaw)
+		dx = -l*cos(self.tilt)*cos(self.yaw)
 		dy = l*sin(self.tilt)#*cos(self.yaw)
 		dz = l*cos(self.tilt)*sin(self.yaw)
 		return (midX + dx, midY + dy, midZ + dz),(midX - dx, midY - dy, midZ - dz)
@@ -146,21 +147,28 @@ class SingleCoordinateTracker( CoordinateTracker ):
 		x1,y1,x2,y2 = xys1[0][0],xys1[0][1],xys2[0][0],xys2[0][1]
 
 		if not 1023 in(x1,x2):
-			
-			self.thetaX = (x1 + x2 -1024)*self.radiansPerPixel/2
-			self.thetaY = (y1 + y2 - 768)*self.radiansPerPixel/2
+			self.thetaX = (x1 + x2 -1024)*self.radiansPerPixel/2.0
+			self.thetaY = (y1 + y2 - 768)*self.radiansPerPixel/2.0
 			self.yaw = -self.thetaX
-			 
-			dx = (x2-x1)*self.radiansPerPixel
-			dy = (y2-y1)*self.radiansPerPixel
+
+			self.dx = (x2-x1)*self.radiansPerPixel
+			self.dy = (y2-y1)*self.radiansPerPixel
 			
-			self.tilt = arcTan(dy,dx)
-			tanX = tan(dx)
-			tanY = tan(dy)
+		elif x1 != 1023:
+			self.thetaX = (self.dx + (2*x1 - 1024)*self.radiansPerPixel)/2.0
+			self.thetaY = (self.dy + (2*y1 - 768) *self.radiansPerPixel)/2.0
 			
-			if dx != 0 or dy != 0: 
-				z = self.distBetweenDots/( 2*sqrt(tanX * tanX + tanY * tanY) ) 
-				self.z = z
+		elif x2 != 1023:
+			self.thetaX = (-self.dx + (2*x2 - 1024)*self.radiansPerPixel)/2.0
+			self.thetaY = (-self.dy + (2*y2 - 768) *self.radiansPerPixel)/2.0
+			
+		self.tilt = arcTan(self.dy,self.dx)
+		tanX = tan(self.dx)
+		tanY = tan(self.dy)
+		
+		if self.dx != 0 or self.dy != 0: 
+			z = self.distBetweenDots/( 2*sqrt(tanX * tanX + tanY * tanY) ) 
+			self.z = z
 
 		
 

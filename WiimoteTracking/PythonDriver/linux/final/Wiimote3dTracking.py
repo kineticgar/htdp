@@ -125,7 +125,6 @@ class Wiimote3dTracker(threading.Thread):
 		def scale((x,y,z)):
 			## Yeah, I know this /could/ be re-factored.
 			## But this is simpler. 
-			print y,
 			if factor != 0:
 				x = float(x) - (minXYZ[0]+maxXYZ[0])/2 
 				x = x/factor
@@ -141,7 +140,6 @@ class Wiimote3dTracker(threading.Thread):
 				z = z/factor
 				z = z*abs(maxZ - minZ)
 				z = z+(maxZ + minZ)/2
-			print "--> %i" %y
 			if integer: return map(int,(x,y,z))
 			else: return x,y,z
 		self.scale = scale
