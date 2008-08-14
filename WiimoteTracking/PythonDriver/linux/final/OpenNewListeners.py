@@ -33,11 +33,11 @@ def getListOfListenersFromFileName(fileName):
 
 	
 
-def lookupListener():
+def lookupListener(parent):
 	from tkFileDialog import askopenfilename
 	from tkMessageBox import showerror
 	from tkSimpleDialog import askstring
-	newWindow = Toplevel()
+	newWindow = Toplevel(parent)
 	#newWindow.title( "Select listener" )
 
 
@@ -55,11 +55,10 @@ def lookupListener():
 		globals().update({'listener': listeners[int(l.curselection()[0])]})
 		args = ''
 		if listener.__init__.func_code.co_argcount >1:
-			args = askstring('Entry', 'Please enter constructor arguments:',parent = newWindow)
-			print type(args)
+			args = askstring('Entry', 'Please enter constructor arguments:')
 		globals().update({'args':args})
 		newWindow.quit()
-		newWindow.destroy()
+		newWindow.withdraw()
 		
 	l.bind("<Double-Button-1>", quit)
 	b = Button(newWindow,text = "ok",command = quit )

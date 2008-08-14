@@ -1,7 +1,22 @@
+## This file is part of the htdp project as part of Google Summer of Code
+## Copyright (C) 2008 Chris Nicholls
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+## 
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## 
+
 import sys
-
 sys.path.append(".")
-
 from Tkinter import *
 from final.Wiimote3dTracking import Wiimote3dTracker
 from final.Listeners import *
@@ -11,7 +26,7 @@ import time
 class App:
 	
 	def __init__(self,master,img):             
-		
+		self.master = master
 		self.tracker = None ## This will be a 3D tracker. 
 		menu =Menu(master)
 		master.config(menu=menu)
@@ -73,9 +88,8 @@ class App:
 		
 			self.menu.entryconfig(2, label = "Disconnect", command = self.disconnect)
 			self.menu.entryconfig(3,state = ACTIVE, command = lambda:self.tracker.calibrate((0,0,0),(800,600,100)))
-			
-			#self.calibrateButton = Button(self.frameForButtons, text="calibrate", command = self.tracker.calibrate)
-			#self.calibrateButton.pack(side=LEFT)
+			for listener in self.listOfListeners:
+				self.tracker.register(listener)
 			for adr in selectedAddresses:
 				self.createButton(adr,150,30 +16*self.listOfAdrs.index(adr))
 			self.tracker.start()	
@@ -98,7 +112,6 @@ class App:
 			
 	def disconnect(self):
 		self.tracker.disconnect()
-		
 		#self.calibrateButton.destroy()
 		self.menu.entryconfig(2,label = "Connect", command = self.connect)
 		self.menu.entryconfig(3,state = DISABLED)
@@ -136,13 +149,13 @@ class App:
 		wiimoteButtons = []
 		
 	def newListener(self):
-		listener = lookupListener()
+		listener = lookupListener(self.master)
 		if listener == None: return
 		if listener not in self.listOfListeners:
 			self.listOfListeners.append(listener)
 			## There HAS to be a better way of doing this next line right? 
 			self.listenersMenu.add_checkbutton(label = str(listener).split()[0].split('.')[-1])
-			self.tracker.register(listener)
+			if self.tracker: self.tracker.register(listener)
 		
 
 		
