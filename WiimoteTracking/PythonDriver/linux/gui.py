@@ -5,6 +5,7 @@ sys.path.append(".")
 from Tkinter import *
 from final.Wiimote3dTracking import Wiimote3dTracker
 from final.Listeners import *
+from final.OpenNewListeners import lookupListener
 import time
 
 class App:
@@ -12,6 +13,18 @@ class App:
 	def __init__(self,master,img):             
 		
 		self.tracker = None ## This will be a 3D tracker. 
+		menu =Menu(master)
+		master.config(menu=menu)
+		menu.add_command( label="Search", command = self.search)
+		menu.add_command( label = "Connect", command = self.connect,state = DISABLED)
+		menu.add_command( label = "Calibrate", command = None,state = DISABLED )
+		listenersMenu = Menu(menu)
+		listenersMenu.add_command( label = "New listener", command = self.newListener)
+		menu.add_cascade( label = "Listeners",menu = listenersMenu)
+		self.menu = menu
+		self.listenersMenu = listenersMenu
+		self.listOfListeners = []
+		self.listenersState = []
 		
 		frameForDiarams = Frame(master)
 		self.frameForDiarams = frameForDiarams
@@ -22,33 +35,14 @@ class App:
 		self.diagram.pack(side = TOP)
 
 		
-		frameForButtons =Frame(master)
-		self.frameForButtons= frameForButtons
-		self.master = master
-		frameForButtons.grid(row = 0,column = 0,sticky = W)
-		
 		self.helpfulMessage = Text()
 		self.helpfulLabel = Message(master,width = 300,text = "Click 'Search' to begin searching for wiimotes")#self.helpfulMessage)
 		self.helpfulLabel.grid(row = 4,sticky=N)	
 		
-		
-		## A button to search for wiimotes
-		self.searchButton = Button(frameForButtons, text="Search", command = self.search)
-		self.searchButton.grid(row = 0,column = 0,sticky = W)
-		
-		## A button to conect to wiimotes
-		self.connectButton = Button(frameForButtons, text="Connect", command = self.connect)
-		self.connectButton.grid(row = 0,column = 1,sticky = E)
-		self.connectButton.config(state = DISABLED)
-		
-		self.calibrateButton = Button(frameForButtons, text = "calibrate", command = None )
-		self.calibrateButton.grid(row = 0,column = 2,sticky = E)
-		self.calibrateButton.config(state = DISABLED)
-				
+
 		self.listOfAdrs = [] ## a list of all the wiimotes we know about.
 		self.listOfAdrsButton = Listbox(master,width = 17,selectmode = MULTIPLE)
-		self.listOfAdrsButton.grid(row = 1,column = 0,columnspan = 2,sticky = W)
-	
+		self.listOfAdrsButton.grid(row = 0,column = 0,columnspan = 2,sticky = W)
 
 	
 		self.frameForDots = Frame()
@@ -64,7 +58,7 @@ class App:
 		## l is a list of all wiimotes in range
 		if len(l) >0:
 			self.updatelistOfAdrs(l)
-			self.connectButton.config(state = ACTIVE) 
+			self.menu.entryconfig(2,state = ACTIVE) 
 			return True
 		return False
 			
@@ -77,16 +71,13 @@ class App:
 		## selected addresses
 		if self.tracker.connect():
 		
-			self.connectButton.destroy()
-			self.disconnectButton = Button(self.frameForButtons, text = "Disconnect", fg = "red", command = self.disconnect)
-			self.disconnectButton.grid(row = 0,column = 1,sticky = E)
-			self.calibrateButton.config(state = ACTIVE, command = lambda:self.tracker.calibrate((0,0,0),(800,600,100)))
+			self.menu.entryconfig(2, label = "Disconnect", command = self.disconnect)
+			self.menu.entryconfig(3,state = ACTIVE, command = lambda:self.tracker.calibrate((0,0,0),(800,600,100)))
 			
 			#self.calibrateButton = Button(self.frameForButtons, text="calibrate", command = self.tracker.calibrate)
 			#self.calibrateButton.pack(side=LEFT)
 			for adr in selectedAddresses:
-				self.createButton(adr,150,76 +16*self.listOfAdrs.index(adr))
-			self.tracker.register(Printer())
+				self.createButton(adr,150,30 +16*self.listOfAdrs.index(adr))
 			self.tracker.start()	
 			
 	def toggleDots(self):
@@ -107,11 +98,10 @@ class App:
 			
 	def disconnect(self):
 		self.tracker.disconnect()
-		self.disconnectButton.destroy()
+		
 		#self.calibrateButton.destroy()
-		self.connectButton = Button(self.frameForButtons, text="Connect", command = self.connect)
-		self.connectButton.grid(row = 0,column = 1,sticky = E)
-		self.calibrateButton.config(state = DISABLED)
+		self.menu.entryconfig(2,label = "Connect", command = self.connect)
+		self.menu.entryconfig(3,state = DISABLED)
 		self.destroyWiimoteButtons()
 		
 	def updatelistOfAdrs(self,listOfAdrsButton):
@@ -139,10 +129,23 @@ class App:
 		w = self.diagram.create_window(x,y,window = b)
 		self.diagram.update()
 		self.wiimoteButtons += [(b,w)]
+		
 	def destroyWiimoteButtons(self):
 		for (wb,w) in self.wiimoteButtons:
 			wb.destroy()
 		wiimoteButtons = []
+		
+	def newListener(self):
+		listener = lookupListener()
+		if listener == None: return
+		if listener not in self.listOfListeners:
+			self.listOfListeners.append(listener)
+			## There HAS to be a better way of doing this next line right? 
+			self.listenersMenu.add_checkbutton(label = str(listener).split()[0].split('.')[-1])
+			self.tracker.register(listener)
+		
+
+		
 if __name__ == "__main__":
 	root = Tk()
 	img = PhotoImage(file = "wiimote40.gif")         

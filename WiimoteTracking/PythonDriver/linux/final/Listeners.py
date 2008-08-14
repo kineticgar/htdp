@@ -31,7 +31,7 @@ class Socket:
 	## 	talker.register( Socket() )
 	##	talker.register( Socket( port = 5035) 
 	## etc..
-	def __init__(self,host = "",port=4440):
+	def __init__(self,port=4440,host = ""):
 		## will raise a socket error if the port isn't available
 		import sys, socket
 		self.data = None
