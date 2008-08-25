@@ -115,7 +115,7 @@ class Wiimote(threading.Thread):
 		t0 = time.time()
 		## The 0x01 sets vibrate on any output register. 0x15 is 
 		## a register we can write to safely without changing anything
-		## importtant, its a request for status info. 
+		## important, its a request for status info. 
 		self.send(0x52,0x15,0x01)
 		time.sleep(duration)
 		self.send(0x52,0x15,0x00)

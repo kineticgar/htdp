@@ -14,7 +14,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-"""This is a group of wrappers for various ooperating systems"""
+"""This is a group of wrappers for various operating systems"""
 from os import name
 def newSocket():
 		
@@ -90,7 +90,7 @@ def __linuxSearch():
 		## Threads are used to look up names to avoid the 
 		## problem of waiting for each device to respond before
 		## moving on to the next which may have left 'discoverable'
-		## mode. It may be posible to get this info when we do the
+		## mode. It may be possible to get this info when we do the
 		## initial search...
 		
 		class LinuxNameGetter(threading.Thread):

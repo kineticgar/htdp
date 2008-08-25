@@ -126,7 +126,7 @@ class App:
 			self.listOfAdrsButton.insert(END, a)
 
 	def refresh(self,(x1,y1,z1),(x2,y2,z2))	:
-		## Giving the App class a refrech method means it can 
+		## Giving the App class a refresh method means it can 
 		## be registered as a listener.
 		self.dots.coords(self.dot1, x1,600-y1,x1+3,600-y1+3)		
 		self.dots.coords(self.dot2, x2,600-y2,x2+3,600-y2+3)
@@ -161,6 +161,7 @@ class App:
 		
 if __name__ == "__main__":
 	root = Tk()
-	img = PhotoImage(file = "wiimote40.gif")         
+	#img = PhotoImage(file = "wiimote40.gif")
+	img = PhotoImage(file = "bzzz.gif")
 	app = App(root,img)
 	root.mainloop()

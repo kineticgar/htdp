@@ -19,16 +19,16 @@
 """
 Co-ordinate tracker:
 -SingleCoordinateTracker should be used for a single wiimote
--DoubleCoordinateTracker shold be used for two or more
+-DoubleCoordinateTracker should be used for two or more
 -Both do some error correction to give sensible results.
 -CoordinateTrackercontains common code for single and double
  which both inherit from CoordinateTracker
  If your unsure how many wiimotes you will have at run time , use 
  CoordinateTrackerFactory. This is a factory method that  will return
  a SingleCoordinateTracker or DoubleCoordinateTracker depending on its argument n. 
--SingleIRRawCoordinates justreturns the parsed data from the wiimote 
+-SingleIRRawCoordinates just returns the parsed data from the wiimote 
 
-A Co-ordinate tracker should satisfy tthe following interface:
+A Co-ordinate tracker should satisfy the following interface:
 
 CoordinateTracker:
 
@@ -235,7 +235,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 		update  = True
 		## visible is a bitmask of the points that are visible
 		visible = reduce((lambda x,y: (x << 1) + (y!=1023)),(xA1,xB1,xA2,xB2),0)
-		if visible == 15: self.visible = 15 ## we can see everythong
+		if visible == 15: self.visible = 15 ## we can see everything
 		else: self.visible &=visible ## take away the points we can't see
 		update &= self.visible not in (0,1,2,4,8) ##If we've lost sight of three
 		## or more dots, then we don't want to update until we see then all again
@@ -261,7 +261,7 @@ class DoubleCoordinateTracker( CoordinateTracker ):
 					self.switch = 2
 					self.oldVectors = v1,(-v2[0],-v2[1])
 				else: 
-					## Somethings gone a bit wrong. 
+					## Something's gone a bit wrong. 
 					self.update = 0
 			else: 
 				self.switch = 0

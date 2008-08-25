@@ -27,7 +27,7 @@ class Wiimote3dTracker(threading.Thread):
 	def __init__(self,*addresses,**raw ):
 		## Accepts an arbitrary number of wiimote addresses as an argument
 		## Currently, any remotes past the first two are ignored, as the IR
-		## parser doesn't know what to do with them. Niether do I actually...
+		## parser doesn't know what to do with them. Neither do I actually...
 
 		self.adrs=addresses
 		if len(self.adrs) ==1 and type(self.adrs[0]) == list:
@@ -155,9 +155,9 @@ class Wiimote3dTracker(threading.Thread):
 			
 			The listeners 'refresh' method must accept either two or four arguments and will be called with the corresponding set of values.
 			"""
-			## This tests weather the listerner has a 'refresh' method	 
+			## This tests weather the listener has a 'refresh' method	 
 		if not hasattr(listener,'refresh') or not hasattr(listener.refresh,'func_code'):
-			raise AttributeError("%s does not have a 'refresh' method.\n Type help(Wiimote3DTracker.register) for more infomation on refresh methods."% listener.__class__)
+			raise AttributeError("%s does not have a 'refresh' method.\n Type help(Wiimote3DTracker.register) for more information on refresh methods."% listener.__class__)
 		## Ok, so we have a refresh method (probably) but we need to make sure 
 		## it has the correct number of 	arguments
 		elif listener.refresh.func_code.co_argcount == 3: 
@@ -168,7 +168,7 @@ class Wiimote3dTracker(threading.Thread):
 				self.polarListeners += [listener]
 		else:
 			print listener.refresh.func_code.co_argcount
-			raise AttributeError("%s does not have a valid 'refresh' method.\n Type help(Wiimote3DTracker.register) for more infomation on refresh methods." % listener.__class__)			
+			raise AttributeError("%s does not have a valid 'refresh' method.\n Type help(Wiimote3DTracker.register) for more information on refresh methods." % listener.__class__)			
 	
 	def unregister(self,listener):
 		"""Removes 'listener' from the list of registered listeners"""

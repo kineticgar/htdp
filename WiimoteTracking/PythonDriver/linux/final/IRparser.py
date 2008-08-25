@@ -25,7 +25,7 @@ class IRparser:
 		## it comes in the form xxxxxxxx yyyyyyyy YYXXssss
 		## where x,y are the ls bits of the x,y data, X,Y the ms bits 
 		## and s is size data 
-		## The following converts this into a more useable format
+		## The following converts this into a more usable format
 		data[0] = ord(data[0][0])
 		data[1] = ord(data[1][0])
 		data[2] = ord(data[2][0])
@@ -39,11 +39,12 @@ class IRparser:
 		x= (x2<<8 ) + x1
 		y= (y2<<8 ) + y1
 		
-		# size is disgarded. 4 bits isn't that usefull. 
+		# size is discarded. 4 bits isn't that useful. 
 		return x,y
 		
 	def parseWiiData(self,data):
 		for d in data:
+			if not d: return None,None
 			if len(d) != 19: return None,None
 		## the public method for the parser. Takes a list of raw wiimote IR data
 		## and uses up to the first two. What to do with more than 2 data is 
